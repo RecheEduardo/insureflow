@@ -1,6 +1,8 @@
 package br.com.eduardoreche.insureflow.application.policy;
 
+import br.com.eduardoreche.insureflow.application.policy.dto.IdempotencyKeyDTO;
 import br.com.eduardoreche.insureflow.application.policy.dto.IssuePolicyCommandDTO;
+import br.com.eduardoreche.insureflow.application.policy.dto.IssuePolicyResultDTO;
 import br.com.eduardoreche.insureflow.domain.exception.BusinessRuleViolationException;
 import br.com.eduardoreche.insureflow.domain.exception.DuplicatePolicyException;
 import br.com.eduardoreche.insureflow.domain.model.Address;
@@ -29,7 +31,9 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneOffset;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -41,32 +45,73 @@ class IssuePolicyTest {
     private static final Clock CLOCK = Clock.fixed(NOW, ZoneOffset.UTC);
 
     private final FakePolicyRepository policies = new FakePolicyRepository();
-    private final IssuePolicy issuePolicy = new IssuePolicy(policies, CLOCK);
+    private final FakeIdempotencyRecordRepository idempotencyRecords = new FakeIdempotencyRecordRepository();
+    private final IssuePolicy issuePolicy = new IssuePolicy(policies, idempotencyRecords, CLOCK);
 
     @Test
-    void issuesActivePolicyAndSavesIt() {
-        Policy policy = issuePolicy.execute(command("AP-001", LocalDate.of(2026, 10, 22)));
+    void issuesActivePolicyAndRecordsTheIdempotencyKey() {
+        IssuePolicyResultDTO result = issuePolicy.execute(command("AP-001", LocalDate.of(2026, 10, 22)),
+                new IdempotencyKeyDTO("key-1", "hash-a"));
 
-        assertThat(policy.getStatus()).isEqualTo(PolicyStatus.ACTIVE);
-        assertThat(policy.getVersion()).isZero();
-        assertThat(policy.getCreatedAt()).isEqualTo(NOW);
-        assertThat(policies.saved).containsExactly(policy);
+        assertThat(result).isEqualTo(new IssuePolicyResultDTO("AP-001", PolicyStatus.ACTIVE, 0));
+        assertThat(policies.saved).singleElement().satisfies(policy -> {
+            assertThat(policy.getPolicyId()).isEqualTo("AP-001");
+            assertThat(policy.getCreatedAt()).isEqualTo(NOW);
+        });
+        assertThat(idempotencyRecords.byKey.get("key-1")).isEqualTo(new IdempotencyRecord("key-1", "hash-a", result, NOW));
     }
 
     @Test
-    void rejectsIssuanceInTheFutureAndSavesNothing() {
-        assertThatThrownBy(() -> issuePolicy.execute(command("AP-001", LocalDate.of(2026, 10, 23))))
-                .isInstanceOf(BusinessRuleViolationException.class)
-                .hasMessageContaining("issuanceDate");
+    void replaysTheOriginalResultForSameKeyAndSameRequest() {
+        IdempotencyKeyDTO key = new IdempotencyKeyDTO("key-1", "hash-a");
+        IssuePolicyResultDTO original = issuePolicy.execute(command("AP-001", LocalDate.of(2026, 10, 1)), key);
 
+        IssuePolicyResultDTO replayed = issuePolicy.execute(command("AP-001", LocalDate.of(2026, 10, 1)), key);
+
+        assertThat(replayed).isEqualTo(original);
+        assertThat(policies.saved).hasSize(1);
+    }
+
+    @Test
+    void rejectsSameKeyWithDifferentRequest() {
+        issuePolicy.execute(command("AP-001", LocalDate.of(2026, 10, 1)), new IdempotencyKeyDTO("key-1", "hash-a"));
+
+        assertThatThrownBy(() -> issuePolicy.execute(command("AP-002", LocalDate.of(2026, 10, 1)),
+                new IdempotencyKeyDTO("key-1", "hash-b")))
+                .isInstanceOfSatisfying(BusinessRuleViolationException.class,
+                        e -> assertThat(e.getCode()).isEqualTo("IDEMPOTENCY_KEY_REUSED"));
+        assertThat(policies.saved).extracting(Policy::getPolicyId).containsExactly("AP-001");
+    }
+
+    @Test
+    void replaysTheConcurrentWinnerWhenTheKeyIsTakenBetweenLookupAndSave() {
+        IssuePolicyResultDTO winner = new IssuePolicyResultDTO("AP-001", PolicyStatus.ACTIVE, 0);
+        idempotencyRecords.concurrentWinner = new IdempotencyRecord("key-1", "hash-a", winner, NOW);
+
+        IssuePolicyResultDTO result = issuePolicy.execute(command("AP-001", LocalDate.of(2026, 10, 1)),
+                new IdempotencyKeyDTO("key-1", "hash-a"));
+
+        assertThat(result).isEqualTo(winner);
         assertThat(policies.saved).isEmpty();
     }
 
     @Test
-    void rejectsSecondPolicyWithSamePolicyId() {
-        issuePolicy.execute(command("AP-001", LocalDate.of(2026, 10, 1)));
+    void doesNotRecordTheKeyWhenIssuanceIsRejected() {
+        assertThatThrownBy(() -> issuePolicy.execute(command("AP-001", LocalDate.of(2026, 10, 23)),
+                new IdempotencyKeyDTO("key-1", "hash-a")))
+                .isInstanceOf(BusinessRuleViolationException.class)
+                .hasMessageContaining("issuanceDate");
 
-        assertThatThrownBy(() -> issuePolicy.execute(command("AP-001", LocalDate.of(2026, 10, 2))))
+        assertThat(policies.saved).isEmpty();
+        assertThat(idempotencyRecords.byKey).isEmpty();
+    }
+
+    @Test
+    void rejectsSecondPolicyWithSamePolicyIdAndDifferentKey() {
+        issuePolicy.execute(command("AP-001", LocalDate.of(2026, 10, 1)), new IdempotencyKeyDTO("key-1", "hash-a"));
+
+        assertThatThrownBy(() -> issuePolicy.execute(command("AP-001", LocalDate.of(2026, 10, 2)),
+                new IdempotencyKeyDTO("key-2", "hash-b")))
                 .isInstanceOf(DuplicatePolicyException.class);
         assertThat(policies.saved).hasSize(1);
     }
@@ -106,6 +151,25 @@ class IssuePolicyTest {
         @Override
         public Optional<Policy> findByPolicyId(String policyId) {
             return saved.stream().filter(p -> p.getPolicyId().equals(policyId)).findFirst();
+        }
+    }
+
+    private static class FakeIdempotencyRecordRepository implements IdempotencyRecordRepository {
+
+        final Map<String, IdempotencyRecord> byKey = new HashMap<>();
+        IdempotencyRecord concurrentWinner;
+
+        @Override
+        public Optional<IdempotencyRecord> findByKey(String key) {
+            return Optional.ofNullable(byKey.get(key));
+        }
+
+        @Override
+        public boolean saveIfAbsent(IdempotencyRecord idempotencyRecord) {
+            if (concurrentWinner != null) {
+                byKey.put(concurrentWinner.key(), concurrentWinner);
+            }
+            return byKey.putIfAbsent(idempotencyRecord.key(), idempotencyRecord) == null;
         }
     }
 }

@@ -3,6 +3,7 @@ package br.com.eduardoreche.insureflow.infrastructure;
 import br.com.eduardoreche.insureflow.application.policy.CancelPolicy;
 import br.com.eduardoreche.insureflow.application.policy.EndorsePolicy;
 import br.com.eduardoreche.insureflow.application.policy.GetPolicy;
+import br.com.eduardoreche.insureflow.application.policy.IdempotencyRecordRepository;
 import br.com.eduardoreche.insureflow.application.policy.IssuePolicy;
 import br.com.eduardoreche.insureflow.application.policy.PolicyRepository;
 import org.springframework.context.annotation.Bean;
@@ -35,7 +36,7 @@ class ApplicationConfig {
     }
 
     @Bean
-    IssuePolicy issuePolicy(PolicyRepository policies, Clock clock) {
-        return new IssuePolicy(policies, clock);
+    IssuePolicy issuePolicy(PolicyRepository policies, IdempotencyRecordRepository idempotencyRecords, Clock clock) {
+        return new IssuePolicy(policies, idempotencyRecords, clock);
     }
 }

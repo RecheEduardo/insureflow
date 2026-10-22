@@ -31,6 +31,7 @@ class ApiExceptionHandler {
             Map.entry("POLICY_CANCELLED", "Apólice cancelada não aceita endosso."),
             Map.entry("POLICY_VERSION_MISMATCH", "A apólice foi alterada desde a última leitura. Consulte-a novamente."),
             Map.entry("ENDORSEMENT_WITHOUT_CHANGES", "Informe ao menos um campo para alterar."),
+            Map.entry("IDEMPOTENCY_KEY_REUSED", "Esta Idempotency-Key já foi usada com outro corpo de requisição."),
             Map.entry("ISSUANCE_IN_FUTURE", "A data de emissão não pode ser futura."),
             Map.entry("POLICY_WITHOUT_INSURED", "A apólice precisa de ao menos um segurado."),
             Map.entry("POLICY_WITHOUT_OBJECT", "A apólice precisa de ao menos um objeto segurado."),
@@ -78,12 +79,22 @@ class ApiExceptionHandler {
             return respond(HttpStatus.PRECONDITION_REQUIRED, "IF_MATCH_REQUIRED",
                     "Informe o cabeçalho If-Match com o ETag da apólice.");
         }
+        if ("Idempotency-Key".equalsIgnoreCase(e.getHeaderName())) {
+            return respond(HttpStatus.BAD_REQUEST, "IDEMPOTENCY_KEY_REQUIRED",
+                    "Informe o cabeçalho Idempotency-Key com um identificador único da emissão.");
+        }
         return respond(HttpStatus.BAD_REQUEST, "INVALID_REQUEST", "Cabeçalho obrigatório ausente: " + e.getHeaderName());
     }
 
     @ExceptionHandler(IfMatch.InvalidIfMatchException.class)
     ResponseEntity<ErrorResponseDTO> invalidIfMatch() {
         return respond(HttpStatus.BAD_REQUEST, "INVALID_IF_MATCH", "O If-Match deve conter o ETag devolvido pela apólice.");
+    }
+
+    @ExceptionHandler(IdempotencyKey.InvalidIdempotencyKeyException.class)
+    ResponseEntity<ErrorResponseDTO> invalidIdempotencyKey() {
+        return respond(HttpStatus.BAD_REQUEST, "INVALID_IDEMPOTENCY_KEY",
+                "A Idempotency-Key deve ter de 1 a 255 caracteres ASCII visíveis.");
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)

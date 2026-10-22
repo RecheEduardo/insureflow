@@ -239,7 +239,7 @@ As decisões não funcionais derivam desta assimetria:
 - `create(..., today, now)`: gera o id, nasce `ACTIVE` e rejeita emissão futura.
 - `restore(...)`: usado só pela persistência; não reaplica regras dependentes do tempo.
 - `endorse(...)`: recebe **apenas** os campos alteráveis, então identificadores são imutáveis por construção. Lança `PolicyCancelledException` se a apólice estiver cancelada. Valida antes de aplicar.
-- `cancel(reason, now)`: cancelamento lógico; se já estiver cancelada, não faz nada e não falha (sustenta o DELETE idempotente).
+- `cancel(reason, now)`: cancelamento lógico; se já estiver cancelada, não faz nada e não falha (sustenta o cancelamento idempotente).
 - `isInForceOn(date)`: não cancelada e com a data dentro da vigência.
 
 **Invariantes do agregado** (na criação e em todo endosso):
@@ -286,6 +286,7 @@ A tradução para status acontece só no adapter web.
 | `PolicyCancelledException` | 409 |
 | Formato inválido / campo imutável no endosso | 400 |
 | `If-Match` divergente (aplicação) | 412 |
+| `If-Match` ausente no endosso (borda) | 428 |
 
 ---
 
@@ -295,11 +296,14 @@ A tradução para status acontece só no adapter web.
 
 | Operação | Respostas |
 |---|---|
-| `POST` | 201 + `Location` + `ETag`; 409 duplicada; 400; 422. `Idempotency-Key` opcional: mesma chave e mesmo corpo devolvem a resposta original; corpo diferente, 422 |
+| `POST` | 201 + `Location` + `ETag`; 409 duplicada; 400 (inclui `Idempotency-Key` ausente ou malformado); 422. `Idempotency-Key` obrigatório: mesma chave e mesmo corpo devolvem a resposta original; corpo diferente, 422 |
 | `GET /{policyId}` | 200 + `ETag`, inclusive cancelada (com status); 404 |
-| `PATCH /{policyId}` + `If-Match` | 200; 412 versão divergente; 409 cancelada; 400 campo desconhecido ou imutável; 422 |
-| `DELETE /{policyId}` | 204 (cancelamento lógico); repetir também dá 204; 404. Motivo opcional, padrão `OUTROS` |
+| `PATCH /{policyId}` + `If-Match` | 200; 412 versão divergente; 428 sem `If-Match`; 409 cancelada; 400 campo desconhecido ou imutável; 422 |
+| `POST /{policyId}/cancellation` | 200 + `ETag` com a apólice cancelada; repetir também dá 200 e mantém o motivo e o instante originais; 404. Motivo opcional no corpo, padrão `OUTROS` |
 
+- **Cancelamento é `POST` num subrecurso, não `DELETE`:** a apólice só passa para `CANCELLED` e continua existindo no banco e na consulta Open Insurance. `DELETE` sugeriria remoção do registro, o que contradiz o cancelamento lógico, e não tem semântica definida para corpo, onde vai o motivo.
+- **Endosso sem `If-Match` é 428, não 400 nem 412:** sem a versão, o endosso sobrescreveria às cegas a alteração de outro operador. O 428 (RFC 6585) diz que falta a pré-condição exigida; 412 fica para a versão divergente e 400 para o `If-Match` malformado.
+- **`Idempotency-Key` obrigatório na emissão:** o cliente gera a chave (UUID) e a repete ao reenviar, como no padrão da Stripe e do rascunho do IETF; sem o header, 400. "Mesmo corpo" é comparado pelo SHA-256 do DTO reserializado, então espaços e ordem dos campos não contam; só o hash é guardado, nunca o corpo com dados pessoais. A chave é gravada com `INSERT ... ON CONFLICT DO NOTHING` **antes** da apólice e na mesma transação: requisições concorrentes com a mesma chave esperam na PK e devolvem o resultado da vencedora, com uma única apólice. A resposta repetida é a original (versão e `ETag` da emissão), mesmo após endossos. Só emissões bem-sucedidas guardam a chave; erro libera a chave para nova tentativa. Chave global (sem dono, pois não há autenticação) e sem expiração.
 - O pedido de criação não tem id, status, versão nem datas técnicas.
 - O pedido de endosso só contém campos alteráveis, e propriedades desconhecidas são rejeitadas. Assim não dá para alterar identificadores pela própria estrutura do contrato.
 

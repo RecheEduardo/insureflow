@@ -1,5 +1,6 @@
 package br.com.eduardoreche.insureflow.adapter.in.web.admin.policy;
 
+import br.com.eduardoreche.insureflow.adapter.in.web.admin.IdempotencyKey;
 import br.com.eduardoreche.insureflow.adapter.in.web.admin.IfMatch;
 import br.com.eduardoreche.insureflow.adapter.in.web.admin.policy.dto.CancelPolicyRequestDTO;
 import br.com.eduardoreche.insureflow.adapter.in.web.admin.policy.dto.EndorsePolicyRequestDTO;
@@ -10,6 +11,7 @@ import br.com.eduardoreche.insureflow.application.policy.CancelPolicy;
 import br.com.eduardoreche.insureflow.application.policy.EndorsePolicy;
 import br.com.eduardoreche.insureflow.application.policy.GetPolicy;
 import br.com.eduardoreche.insureflow.application.policy.IssuePolicy;
+import br.com.eduardoreche.insureflow.application.policy.dto.IssuePolicyResultDTO;
 import br.com.eduardoreche.insureflow.domain.model.Policy;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
@@ -22,6 +24,7 @@ import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.util.UriComponentsBuilder;
+import tools.jackson.databind.json.JsonMapper;
 
 import java.net.URI;
 
@@ -33,29 +36,35 @@ class PolicyController {
     private final GetPolicy getPolicy;
     private final CancelPolicy cancelPolicy;
     private final EndorsePolicy endorsePolicy;
+    private final JsonMapper json;
 
     PolicyController(IssuePolicy issuePolicy, GetPolicy getPolicy, CancelPolicy cancelPolicy,
-                     EndorsePolicy endorsePolicy) {
+                     EndorsePolicy endorsePolicy, JsonMapper json) {
         this.issuePolicy = issuePolicy;
         this.getPolicy = getPolicy;
         this.cancelPolicy = cancelPolicy;
         this.endorsePolicy = endorsePolicy;
+        this.json = json;
     }
 
     @PostMapping
-    ResponseEntity<IssuedPolicyResponseDTO> issue(@Valid @RequestBody IssuePolicyRequestDTO request) {
-        Policy policy = issuePolicy.execute(request.toCommand());
+    ResponseEntity<IssuedPolicyResponseDTO> issue(@RequestHeader("Idempotency-Key") String idempotencyKey,
+                                                  @Valid @RequestBody IssuePolicyRequestDTO request) {
+        IssuePolicyResultDTO result = issuePolicy.execute(
+                request.toCommand(),
+                IdempotencyKey.of(idempotencyKey, json.writeValueAsString(request)));
+
         return ResponseEntity
-                .created(location(policy))
-                .eTag(eTag(policy))
-                .body(new IssuedPolicyResponseDTO(policy.getPolicyId(), policy.getStatus().name(), policy.getVersion()));
+                .created(location(result.policyId()))
+                .eTag(String.valueOf(result.version()))
+                .body(new IssuedPolicyResponseDTO(result.policyId(), result.status().name(), result.version()));
     }
 
     @GetMapping("/{policyId}")
     ResponseEntity<PolicyResponseDTO> get(@PathVariable String policyId) {
         Policy policy = getPolicy.execute(policyId);
         return ResponseEntity.ok()
-                .eTag(eTag(policy))
+                .eTag(String.valueOf(policy.getVersion()))
                 .body(PolicyResponseDTO.from(policy));
     }
 
@@ -65,7 +74,7 @@ class PolicyController {
                                               @Valid @RequestBody EndorsePolicyRequestDTO request) {
         Policy policy = endorsePolicy.execute(request.toCommand(policyId, IfMatch.toVersion(ifMatch)));
         return ResponseEntity.ok()
-                .eTag(eTag(policy))
+                .eTag(String.valueOf(policy.getVersion()))
                 .body(PolicyResponseDTO.from(policy));
     }
 
@@ -74,16 +83,12 @@ class PolicyController {
                                              @RequestBody(required = false) CancelPolicyRequestDTO request) {
         Policy policy = cancelPolicy.execute(CancelPolicyRequestDTO.toCommand(policyId, request));
         return ResponseEntity.ok()
-                .eTag(eTag(policy))
+                .eTag(String.valueOf(policy.getVersion()))
                 .body(PolicyResponseDTO.from(policy));
     }
 
-    private static String eTag(Policy policy) {
-        return "\"" + policy.getVersion() + "\"";
-    }
-
-    private static URI location(Policy policy) {
+    private static URI location(String policyId) {
         return UriComponentsBuilder.fromPath("/api/v1/policies/{policyId}")
-                .buildAndExpand(policy.getPolicyId()).encode().toUri();
+                .buildAndExpand(policyId).encode().toUri();
     }
 }
