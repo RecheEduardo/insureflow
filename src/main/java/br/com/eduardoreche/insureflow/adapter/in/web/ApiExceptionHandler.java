@@ -8,22 +8,30 @@ import br.com.eduardoreche.insureflow.domain.exception.DuplicatePolicyException;
 import br.com.eduardoreche.insureflow.domain.exception.PolicyCancelledException;
 import br.com.eduardoreche.insureflow.domain.exception.PolicyNotFoundException;
 import br.com.eduardoreche.insureflow.domain.exception.PolicyVersionMismatchException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.dao.OptimisticLockingFailureException;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.web.ErrorResponse;
+import org.springframework.web.HttpMediaTypeNotSupportedException;
+import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.MissingRequestHeaderException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.HandlerMethodValidationException;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
+import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 import java.time.Clock;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 @RestControllerAdvice
 class ApiExceptionHandler {
@@ -51,6 +59,8 @@ class ApiExceptionHandler {
             Map.entry("MONEY_NEGATIVE", "O valor monetário não pode ser negativo."),
             Map.entry("MONEY_SCALE", "O valor monetário aceita no máximo duas casas decimais."),
             Map.entry("MONEY_CURRENCY_MISMATCH", "Moedas diferentes não podem ser comparadas."));
+
+    private static final Logger log = LoggerFactory.getLogger(ApiExceptionHandler.class);
 
     private final Clock clock;
 
@@ -122,21 +132,59 @@ class ApiExceptionHandler {
                 "Corpo inválido: JSON malformado, campo desconhecido ou valor fora do formato.");
     }
 
+    @ExceptionHandler(NoResourceFoundException.class)
+    ResponseEntity<ErrorResponseDTO> unknownRoute() {
+        return respond(HttpStatus.NOT_FOUND, "RESOURCE_NOT_FOUND", "Rota não encontrada.");
+    }
+
+    @ExceptionHandler(HttpRequestMethodNotSupportedException.class)
+    ResponseEntity<ErrorResponseDTO> methodNotAllowed(HttpRequestMethodNotSupportedException e) {
+        Set<HttpMethod> supported = e.getSupportedHttpMethods() == null ? Set.of() : e.getSupportedHttpMethods();
+        return ResponseEntity.status(HttpStatus.METHOD_NOT_ALLOWED)
+                .allow(supported.toArray(HttpMethod[]::new))
+                .body(error(HttpStatus.METHOD_NOT_ALLOWED, "METHOD_NOT_ALLOWED",
+                        "Método HTTP não suportado nesta rota."));
+    }
+
+    @ExceptionHandler(HttpMediaTypeNotSupportedException.class)
+    ResponseEntity<ErrorResponseDTO> unsupportedMediaType() {
+        return respond(HttpStatus.UNSUPPORTED_MEDIA_TYPE, "UNSUPPORTED_MEDIA_TYPE",
+                "Envie o corpo como application/json.");
+    }
+
+    // Exceções do Spring MVC sem handler próprio já trazem o status certo; só o que não traz vira 500.
+    @ExceptionHandler(Exception.class)
+    ResponseEntity<ErrorResponseDTO> unexpected(Exception e) {
+        if (e instanceof ErrorResponse framework && framework.getStatusCode().is4xxClientError()) {
+            HttpStatus status = HttpStatus.valueOf(framework.getStatusCode().value());
+            return respond(status, "INVALID_REQUEST", "Requisição inválida.");
+        }
+        log.error("Unexpected error handling request", e);
+        return respond(HttpStatus.INTERNAL_SERVER_ERROR, "INTERNAL_ERROR",
+                "Erro inesperado. Tente novamente mais tarde.");
+    }
+
     private ResponseEntity<ErrorResponseDTO> respond(HttpStatus status, String code, String detail) {
+        return ResponseEntity.status(status).body(error(status, code, detail));
+    }
+
+    private ErrorResponseDTO error(HttpStatus status, String code, String detail) {
         String requestDateTime = Instant.now(clock).truncatedTo(ChronoUnit.SECONDS).toString();
         ErrorResponseDTO.ErrorDTO error = new ErrorResponseDTO.ErrorDTO(code, title(status), detail, requestDateTime);
-        return ResponseEntity.status(status).body(new ErrorResponseDTO(List.of(error)));
+        return new ErrorResponseDTO(List.of(error));
     }
 
     private static String title(HttpStatus status) {
         return switch (status) {
             case NOT_FOUND -> "Recurso não encontrado";
+            case METHOD_NOT_ALLOWED -> "Método não permitido";
+            case UNSUPPORTED_MEDIA_TYPE -> "Tipo de mídia não suportado";
             case CONFLICT -> "Conflito";
             case PRECONDITION_FAILED -> "Pré-condição falhou";
             case PRECONDITION_REQUIRED -> "Pré-condição obrigatória";
             case UNPROCESSABLE_CONTENT -> "Regra de negócio violada";
             case BAD_REQUEST -> "Requisição inválida";
-            default -> "Erro interno";
+            default -> status.is4xxClientError() ? "Requisição inválida" : "Erro interno";
         };
     }
 }

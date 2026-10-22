@@ -72,6 +72,14 @@ class PolicyInfoControllerTest {
     }
 
     @Test
+    void masksTheInsuredDocumentKeepingOnlyTheLastTwoDigits() throws Exception {
+        when(getPolicy.execute("AP-001")).thenReturn(PolicyFixtures.activePolicy("AP-001"));
+
+        mvc.perform(get(URL))
+                .andExpect(jsonPath("$.insureds[0].identification").value("***01"));
+    }
+
+    @Test
     void omitsOptionalFieldsThatAreAbsent() throws Exception {
         when(getPolicy.execute("AP-001")).thenReturn(PolicyFixtures.activePolicy("AP-001"));
 

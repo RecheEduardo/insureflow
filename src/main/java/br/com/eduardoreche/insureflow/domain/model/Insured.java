@@ -25,10 +25,14 @@ public record Insured(
         }
     }
 
+    public String maskedIdentification() {
+        String tail = identification.length() > 2 ? identification.substring(identification.length() - 2) : "";
+        return "***" + tail;
+    }
+
     // Mascarado para logs (LGPD).
     @Override
     public String toString() {
-        String tail = identification.length() > 2 ? identification.substring(identification.length() - 2) : "";
-        return "Insured[identificationType=" + identificationType + ", identification=***" + tail + "]";
+        return "Insured[identificationType=" + identificationType + ", identification=" + maskedIdentification() + "]";
     }
 }

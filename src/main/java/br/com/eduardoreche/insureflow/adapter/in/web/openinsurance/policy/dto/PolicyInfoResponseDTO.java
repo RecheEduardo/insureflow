@@ -68,7 +68,7 @@ public record PolicyInfoResponseDTO(
             AddressDTO address) {
 
         static InsuredDTO from(Insured insured) {
-            return new InsuredDTO(insured.identification(), insured.identificationType(), insured.name(),
+            return new InsuredDTO(insured.maskedIdentification(), insured.identificationType(), insured.name(),
                     insured.birthDate(), insured.email(), AddressDTO.from(insured.address()));
         }
     }
