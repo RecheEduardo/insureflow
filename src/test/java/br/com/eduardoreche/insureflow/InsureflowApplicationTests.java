@@ -1,4 +1,4 @@
-package br.com.eduadoreche.insureflow;
+package br.com.eduardoreche.insureflow;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;

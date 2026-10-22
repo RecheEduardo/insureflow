@@ -8,7 +8,7 @@
 		<version>4.1.1</version>
 		<relativePath/> <!-- lookup parent from repository -->
 	</parent>
-	<groupId>br.com.eduadoreche</groupId>
+	<groupId>br.com.eduardoreche</groupId>
 	<artifactId>insureflow</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
 	<name/>

@@ -1,4 +1,4 @@
-package br.com.eduadoreche.insureflow;
+package br.com.eduardoreche.insureflow;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
