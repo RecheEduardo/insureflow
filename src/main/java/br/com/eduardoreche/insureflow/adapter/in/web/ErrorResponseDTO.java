@@ -1,4 +1,4 @@
-package br.com.eduardoreche.insureflow.adapter.in.web.admin.dto;
+package br.com.eduardoreche.insureflow.adapter.in.web;
 
 import java.util.List;
 

@@ -1,6 +1,7 @@
-package br.com.eduardoreche.insureflow.adapter.in.web.admin;
+package br.com.eduardoreche.insureflow.adapter.in.web;
 
-import br.com.eduardoreche.insureflow.adapter.in.web.admin.dto.ErrorResponseDTO;
+import br.com.eduardoreche.insureflow.adapter.in.web.admin.IdempotencyKey;
+import br.com.eduardoreche.insureflow.adapter.in.web.admin.IfMatch;
 import br.com.eduardoreche.insureflow.domain.exception.BusinessRuleViolationException;
 import br.com.eduardoreche.insureflow.domain.exception.DomainException;
 import br.com.eduardoreche.insureflow.domain.exception.DuplicatePolicyException;
