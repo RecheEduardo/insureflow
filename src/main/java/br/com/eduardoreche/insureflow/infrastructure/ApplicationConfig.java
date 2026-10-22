@@ -5,6 +5,8 @@ import br.com.eduardoreche.insureflow.application.policy.EndorsePolicy;
 import br.com.eduardoreche.insureflow.application.policy.GetPolicy;
 import br.com.eduardoreche.insureflow.application.policy.IdempotencyRecordRepository;
 import br.com.eduardoreche.insureflow.application.policy.IssuePolicy;
+import br.com.eduardoreche.insureflow.application.policy.ListPolicies;
+import br.com.eduardoreche.insureflow.application.policy.PolicyQueryRepository;
 import br.com.eduardoreche.insureflow.application.policy.PolicyRepository;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -33,6 +35,11 @@ class ApplicationConfig {
     @Bean
     GetPolicy getPolicy(PolicyRepository policies) {
         return new GetPolicy(policies);
+    }
+
+    @Bean
+    ListPolicies listPolicies(PolicyQueryRepository policies) {
+        return new ListPolicies(policies);
     }
 
     @Bean

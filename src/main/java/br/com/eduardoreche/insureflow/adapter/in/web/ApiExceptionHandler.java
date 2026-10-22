@@ -16,6 +16,8 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.MissingRequestHeaderException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.method.annotation.HandlerMethodValidationException;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
 import java.time.Clock;
 import java.time.Instant;
@@ -107,6 +109,11 @@ class ApiExceptionHandler {
                 .reduce((a, b) -> a + ", " + b)
                 .orElse("corpo");
         return respond(HttpStatus.BAD_REQUEST, "INVALID_REQUEST", "Campos inválidos: " + fields + ".");
+    }
+
+    @ExceptionHandler({HandlerMethodValidationException.class, MethodArgumentTypeMismatchException.class})
+    ResponseEntity<ErrorResponseDTO> invalidParameter() {
+        return respond(HttpStatus.BAD_REQUEST, "INVALID_REQUEST", "Parâmetro de consulta inválido.");
     }
 
     @ExceptionHandler(HttpMessageNotReadableException.class)
