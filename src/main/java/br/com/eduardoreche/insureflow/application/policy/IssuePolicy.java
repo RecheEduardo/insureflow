@@ -1,5 +1,6 @@
 package br.com.eduardoreche.insureflow.application.policy;
 
+import br.com.eduardoreche.insureflow.application.policy.dto.IssuePolicyCommandDTO;
 import br.com.eduardoreche.insureflow.domain.model.Policy;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -18,7 +19,7 @@ public class IssuePolicy {
     }
 
     @Transactional
-    public Policy execute(IssuePolicyCommand command) {
+    public Policy execute(IssuePolicyCommandDTO command) {
         Policy policy = Policy.create(
                 command.policyId(),
                 command.documentType(),

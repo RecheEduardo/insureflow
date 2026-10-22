@@ -1,5 +1,6 @@
 package br.com.eduardoreche.insureflow.application.policy;
 
+import br.com.eduardoreche.insureflow.application.policy.dto.CancelPolicyCommandDTO;
 import br.com.eduardoreche.insureflow.domain.exception.PolicyNotFoundException;
 import br.com.eduardoreche.insureflow.domain.model.Policy;
 import org.springframework.transaction.annotation.Transactional;
@@ -18,7 +19,7 @@ public class CancelPolicy {
     }
 
     @Transactional
-    public Policy execute(CancelPolicyCommand command) {
+    public Policy execute(CancelPolicyCommandDTO command) {
         Policy policy = policies.findByPolicyId(command.policyId())
                 .orElseThrow(() -> new PolicyNotFoundException(command.policyId()));
         if (policy.isCancelled()) {

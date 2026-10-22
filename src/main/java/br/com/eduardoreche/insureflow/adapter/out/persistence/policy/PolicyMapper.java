@@ -1,4 +1,4 @@
-package br.com.eduardoreche.insureflow.adapter.out.persistence;
+package br.com.eduardoreche.insureflow.adapter.out.persistence.policy;
 
 import br.com.eduardoreche.insureflow.domain.model.Insured;
 import br.com.eduardoreche.insureflow.domain.model.InsuredObject;

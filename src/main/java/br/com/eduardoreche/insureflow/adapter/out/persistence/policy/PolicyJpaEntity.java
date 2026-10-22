@@ -1,4 +1,4 @@
-package br.com.eduardoreche.insureflow.adapter.out.persistence;
+package br.com.eduardoreche.insureflow.adapter.out.persistence.policy;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;

@@ -1,6 +1,7 @@
 package br.com.eduardoreche.insureflow.infrastructure;
 
 import br.com.eduardoreche.insureflow.application.policy.CancelPolicy;
+import br.com.eduardoreche.insureflow.application.policy.EndorsePolicy;
 import br.com.eduardoreche.insureflow.application.policy.GetPolicy;
 import br.com.eduardoreche.insureflow.application.policy.IssuePolicy;
 import br.com.eduardoreche.insureflow.application.policy.PolicyRepository;
@@ -21,6 +22,11 @@ class ApplicationConfig {
     @Bean
     CancelPolicy cancelPolicy(PolicyRepository policies, Clock clock) {
         return new CancelPolicy(policies, clock);
+    }
+
+    @Bean
+    EndorsePolicy endorsePolicy(PolicyRepository policies, Clock clock) {
+        return new EndorsePolicy(policies, clock);
     }
 
     @Bean

@@ -1,4 +1,4 @@
-package br.com.eduardoreche.insureflow.adapter.out.persistence;
+package br.com.eduardoreche.insureflow.adapter.out.persistence.policy;
 
 import br.com.eduardoreche.insureflow.application.policy.PolicyRepository;
 import br.com.eduardoreche.insureflow.domain.exception.DuplicatePolicyException;

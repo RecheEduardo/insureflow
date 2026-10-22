@@ -1,4 +1,4 @@
-package br.com.eduardoreche.insureflow.adapter.in.web.admin;
+package br.com.eduardoreche.insureflow.adapter.in.web.admin.policy.dto;
 
 import br.com.eduardoreche.insureflow.domain.model.Address;
 import br.com.eduardoreche.insureflow.domain.model.Coverage;
@@ -23,7 +23,7 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.util.List;
 
-public record PolicyResponse(
+public record PolicyResponseDTO(
         String policyId,
         DocumentType documentType,
         String groupCertificateId,
@@ -34,8 +34,8 @@ public record PolicyResponse(
         String maxLMG,
         String proposalId,
         String productName,
-        List<InsuredResponse> insureds,
-        List<InsuredObjectResponse> insuredObjects,
+        List<InsuredResponseDTO> insureds,
+        List<InsuredObjectResponseDTO> insuredObjects,
         PolicyStatus status,
         Instant cancelledAt,
         CancellationReason cancellationReason,
@@ -43,8 +43,8 @@ public record PolicyResponse(
         Instant createdAt,
         Instant updatedAt) {
 
-    public static PolicyResponse from(Policy policy) {
-        return new PolicyResponse(
+    public static PolicyResponseDTO from(Policy policy) {
+        return new PolicyResponseDTO(
                 policy.getPolicyId(),
                 policy.getDocumentType(),
                 policy.getGroupCertificateId(),
@@ -55,8 +55,8 @@ public record PolicyResponse(
                 money(policy.getMaxLmg()),
                 policy.getProposalId(),
                 policy.getProductName(),
-                policy.getInsureds().stream().map(InsuredResponse::from).toList(),
-                policy.getInsuredObjects().stream().map(InsuredObjectResponse::from).toList(),
+                policy.getInsureds().stream().map(InsuredResponseDTO::from).toList(),
+                policy.getInsuredObjects().stream().map(InsuredObjectResponseDTO::from).toList(),
                 policy.getStatus(),
                 policy.getCancelledAt(),
                 policy.getCancellationReason(),
@@ -69,21 +69,21 @@ public record PolicyResponse(
         return money == null ? null : money.amount().toPlainString();
     }
 
-    public record InsuredResponse(
+    public record InsuredResponseDTO(
             String identification,
             IdentificationType identificationType,
             String name,
             LocalDate birthDate,
             String email,
-            AddressResponse address) {
+            AddressResponseDTO address) {
 
-        static InsuredResponse from(Insured insured) {
-            return new InsuredResponse(insured.identification(), insured.identificationType(), insured.name(),
-                    insured.birthDate(), insured.email(), AddressResponse.from(insured.address()));
+        static InsuredResponseDTO from(Insured insured) {
+            return new InsuredResponseDTO(insured.identification(), insured.identificationType(), insured.name(),
+                    insured.birthDate(), insured.email(), AddressResponseDTO.from(insured.address()));
         }
     }
 
-    public record AddressResponse(
+    public record AddressResponseDTO(
             StreetType streetType,
             String streetName,
             String number,
@@ -93,29 +93,29 @@ public record PolicyResponse(
             Uf state,
             String postCode) {
 
-        static AddressResponse from(Address address) {
-            return new AddressResponse(address.streetType(), address.streetName(), address.number(),
+        static AddressResponseDTO from(Address address) {
+            return new AddressResponseDTO(address.streetType(), address.streetName(), address.number(),
                     address.complement(), address.district(), address.townName(), address.state(),
                     address.postCode());
         }
     }
 
-    public record InsuredObjectResponse(
+    public record InsuredObjectResponseDTO(
             String identification,
             PropertyType propertyType,
             String description,
             String postCode,
             String amount,
-            List<CoverageResponse> coverages) {
+            List<CoverageResponseDTO> coverages) {
 
-        static InsuredObjectResponse from(InsuredObject object) {
-            return new InsuredObjectResponse(object.identification(), object.propertyType(),
+        static InsuredObjectResponseDTO from(InsuredObject object) {
+            return new InsuredObjectResponseDTO(object.identification(), object.propertyType(),
                     object.description(), object.postCode(), money(object.amount()),
-                    object.coverages().stream().map(CoverageResponse::from).toList());
+                    object.coverages().stream().map(CoverageResponseDTO::from).toList());
         }
     }
 
-    public record CoverageResponse(
+    public record CoverageResponseDTO(
             String branch,
             CoverageCode code,
             String description,
@@ -128,8 +128,8 @@ public record PolicyResponse(
             CoverageType type,
             PremiumPeriodicity premiumPeriodicity) {
 
-        static CoverageResponse from(Coverage coverage) {
-            return new CoverageResponse(coverage.branch(), coverage.code(), coverage.description(),
+        static CoverageResponseDTO from(Coverage coverage) {
+            return new CoverageResponseDTO(coverage.branch(), coverage.code(), coverage.description(),
                     coverage.susepProcessNumber(), money(coverage.lmi()), coverage.term().startDate(),
                     coverage.term().endDate(), coverage.mainCoverage(), coverage.feature(), coverage.type(),
                     coverage.premiumPeriodicity());

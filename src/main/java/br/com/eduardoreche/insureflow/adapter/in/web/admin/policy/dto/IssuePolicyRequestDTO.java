@@ -1,6 +1,6 @@
-package br.com.eduardoreche.insureflow.adapter.in.web.admin;
+package br.com.eduardoreche.insureflow.adapter.in.web.admin.policy.dto;
 
-import br.com.eduardoreche.insureflow.application.policy.IssuePolicyCommand;
+import br.com.eduardoreche.insureflow.application.policy.dto.IssuePolicyCommandDTO;
 import br.com.eduardoreche.insureflow.domain.model.Address;
 import br.com.eduardoreche.insureflow.domain.model.Coverage;
 import br.com.eduardoreche.insureflow.domain.model.Insured;
@@ -29,7 +29,7 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
 
-public record IssuePolicyRequest(
+public record IssuePolicyRequestDTO(
         @NotBlank @Size(max = 60) String policyId,
         @NotNull DocumentType documentType,
         @Size(max = 60) String groupCertificateId,
@@ -40,37 +40,37 @@ public record IssuePolicyRequest(
         @NotNull @Pattern(regexp = "^\\d{1,16}\\.\\d{2}$") String maxLMG,
         @NotBlank @Size(max = 60) String proposalId,
         @NotBlank @Size(max = 70) String productName,
-        @NotEmpty @Valid List<InsuredRequest> insureds,
-        @NotEmpty @Valid List<InsuredObjectRequest> insuredObjects) {
+        @NotEmpty @Valid List<InsuredRequestDTO> insureds,
+        @NotEmpty @Valid List<InsuredObjectRequestDTO> insuredObjects) {
 
-    public IssuePolicyCommand toCommand() {
-        return new IssuePolicyCommand(
+    public IssuePolicyCommandDTO toCommand() {
+        return new IssuePolicyCommandDTO(
                 policyId, documentType, groupCertificateId, issuanceType, issuanceDate,
                 new Term(termStartDate, termEndDate),
                 money(maxLMG),
                 proposalId, productName,
-                insureds.stream().map(InsuredRequest::toDomain).toList(),
-                insuredObjects.stream().map(InsuredObjectRequest::toDomain).toList());
+                insureds.stream().map(InsuredRequestDTO::toDomain).toList(),
+                insuredObjects.stream().map(InsuredObjectRequestDTO::toDomain).toList());
     }
 
     private static Money money(String amount) {
         return amount == null ? null : Money.brl(new BigDecimal(amount));
     }
 
-    public record InsuredRequest(
+    public record InsuredRequestDTO(
             @NotBlank String identification,
             @NotNull IdentificationType identificationType,
             @NotBlank String name,
             LocalDate birthDate,
             @Email String email,
-            @NotNull @Valid AddressRequest address) {
+            @NotNull @Valid AddressRequestDTO address) {
 
         Insured toDomain() {
             return new Insured(identification, identificationType, name, birthDate, email, address.toDomain());
         }
     }
 
-    public record AddressRequest(
+    public record AddressRequestDTO(
             @NotNull StreetType streetType,
             @NotBlank String streetName,
             @NotBlank String number,
@@ -85,21 +85,21 @@ public record IssuePolicyRequest(
         }
     }
 
-    public record InsuredObjectRequest(
+    public record InsuredObjectRequestDTO(
             @NotBlank String identification,
             @NotNull PropertyType propertyType,
             @NotBlank String description,
             @NotNull @Pattern(regexp = "^\\d{8}$") String postCode,
             @Pattern(regexp = "^\\d{1,16}\\.\\d{2}$") String amount,
-            @NotEmpty @Valid List<CoverageRequest> coverages) {
+            @NotEmpty @Valid List<CoverageRequestDTO> coverages) {
 
         InsuredObject toDomain() {
             return new InsuredObject(identification, propertyType, description, postCode, money(amount),
-                    coverages.stream().map(CoverageRequest::toDomain).toList());
+                    coverages.stream().map(CoverageRequestDTO::toDomain).toList());
         }
     }
 
-    public record CoverageRequest(
+    public record CoverageRequestDTO(
             @NotNull @Pattern(regexp = "^\\d{4}$") String branch,
             @NotNull CoverageCode code,
             String description,

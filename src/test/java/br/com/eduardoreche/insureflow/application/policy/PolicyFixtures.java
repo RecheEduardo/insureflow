@@ -23,14 +23,14 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.util.List;
 
-final class PolicyFixtures {
+public final class PolicyFixtures {
 
-    static final Instant NOW = Instant.parse("2026-10-22T12:00:00Z");
+    public static final Instant NOW = Instant.parse("2026-10-22T12:00:00Z");
 
     private PolicyFixtures() {
     }
 
-    static Policy activePolicy(String policyId) {
+    public static Policy activePolicy(String policyId) {
         Term term = new Term(LocalDate.of(2026, 10, 1), LocalDate.of(2027, 9, 30));
         Coverage coverage = new Coverage("0118", CoverageCode.INCENDIO, null, "15414.900000/2020-11",
                 Money.brl(new BigDecimal("100000.00")), term, true, CoverageFeature.MASSIFICADOS,

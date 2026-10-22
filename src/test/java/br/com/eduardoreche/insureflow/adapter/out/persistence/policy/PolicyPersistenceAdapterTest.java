@@ -1,4 +1,4 @@
-package br.com.eduardoreche.insureflow.adapter.out.persistence;
+package br.com.eduardoreche.insureflow.adapter.out.persistence.policy;
 
 import br.com.eduardoreche.insureflow.domain.exception.DuplicatePolicyException;
 import br.com.eduardoreche.insureflow.domain.model.Address;
@@ -101,6 +101,24 @@ class PolicyPersistenceAdapterTest {
         assertThat(reloaded.getCancellationReason()).isEqualTo(CancellationReason.PERDA_TOTAL);
         assertThat(reloaded.getCancelledAt()).isEqualTo(Instant.parse("2026-11-05T09:30:00Z"));
         assertThat(reloaded.getInsureds()).isEqualTo(loaded.getInsureds());
+    }
+
+    @Test
+    void updatePersistsEndorsedFieldsAndBumpsVersion() {
+        repository.save(policy("AP-001"));
+        Policy loaded = repository.findByPolicyId("AP-001").orElseThrow();
+        loaded.endorse(new Term(loaded.getTerm().startDate(), LocalDate.of(2028, 9, 30)),
+                Money.brl(new BigDecimal("300000.00")), "Residencial Plus", loaded.getInsureds(),
+                loaded.getInsuredObjects(), Instant.parse("2026-12-01T10:00:00Z"));
+
+        Policy updated = repository.update(loaded);
+
+        assertThat(updated.getVersion()).isEqualTo(1L);
+        Policy reloaded = repository.findByPolicyId("AP-001").orElseThrow();
+        assertThat(reloaded.getTerm().endDate()).isEqualTo(LocalDate.of(2028, 9, 30));
+        assertThat(reloaded.getMaxLmg()).isEqualTo(Money.brl(new BigDecimal("300000.00")));
+        assertThat(reloaded.getProductName()).isEqualTo("Residencial Plus");
+        assertThat(reloaded.getInsuredObjects()).isEqualTo(loaded.getInsuredObjects());
     }
 
     @Test

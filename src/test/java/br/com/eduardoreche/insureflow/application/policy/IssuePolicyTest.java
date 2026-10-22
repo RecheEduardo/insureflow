@@ -1,5 +1,6 @@
 package br.com.eduardoreche.insureflow.application.policy;
 
+import br.com.eduardoreche.insureflow.application.policy.dto.IssuePolicyCommandDTO;
 import br.com.eduardoreche.insureflow.domain.exception.BusinessRuleViolationException;
 import br.com.eduardoreche.insureflow.domain.exception.DuplicatePolicyException;
 import br.com.eduardoreche.insureflow.domain.model.Address;
@@ -70,7 +71,7 @@ class IssuePolicyTest {
         assertThat(policies.saved).hasSize(1);
     }
 
-    private static IssuePolicyCommand command(String policyId, LocalDate issuanceDate) {
+    private static IssuePolicyCommandDTO command(String policyId, LocalDate issuanceDate) {
         Term term = new Term(LocalDate.of(2026, 10, 1), LocalDate.of(2027, 9, 30));
         Coverage coverage = new Coverage("0118", CoverageCode.INCENDIO, null, "15414.900000/2020-11",
                 Money.brl(new BigDecimal("100000.00")), term, true, CoverageFeature.MASSIFICADOS,
@@ -80,7 +81,7 @@ class IssuePolicyTest {
         Insured insured = new Insured("12345678901", IdentificationType.CPF, "Maria Ficticia",
                 LocalDate.of(1990, 5, 17), null,
                 new Address(StreetType.RUA, "Rua Exemplo", "100", null, null, "Sao Paulo", Uf.SP, "01310100"));
-        return new IssuePolicyCommand(policyId, DocumentType.APOLICE_INDIVIDUAL, null,
+        return new IssuePolicyCommandDTO(policyId, DocumentType.APOLICE_INDIVIDUAL, null,
                 IssuanceType.EMISSAO_PROPRIA, issuanceDate, term, Money.brl(new BigDecimal("200000.00")),
                 "PROP-001", "Residencial Essencial", List.of(insured), List.of(object));
     }

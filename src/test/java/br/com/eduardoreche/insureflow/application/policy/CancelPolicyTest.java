@@ -1,5 +1,6 @@
 package br.com.eduardoreche.insureflow.application.policy;
 
+import br.com.eduardoreche.insureflow.application.policy.dto.CancelPolicyCommandDTO;
 import br.com.eduardoreche.insureflow.domain.exception.PolicyNotFoundException;
 import br.com.eduardoreche.insureflow.domain.model.Policy;
 import br.com.eduardoreche.insureflow.domain.model.enums.CancellationReason;
@@ -30,7 +31,7 @@ class CancelPolicyTest {
         policies.stored = activePolicy("AP-001");
 
         Policy cancelled = cancelPolicy.execute(
-                new CancelPolicyCommand("AP-001", CancellationReason.FALTA_DE_PAGAMENTO));
+                new CancelPolicyCommandDTO("AP-001", CancellationReason.FALTA_DE_PAGAMENTO));
 
         assertThat(cancelled.getStatus()).isEqualTo(PolicyStatus.CANCELLED);
         assertThat(cancelled.getCancellationReason()).isEqualTo(CancellationReason.FALTA_DE_PAGAMENTO);
@@ -42,10 +43,10 @@ class CancelPolicyTest {
     @Test
     void cancellingAgainChangesNothingAndWritesNothing() {
         policies.stored = activePolicy("AP-001");
-        cancelPolicy.execute(new CancelPolicyCommand("AP-001", CancellationReason.FALTA_DE_PAGAMENTO));
+        cancelPolicy.execute(new CancelPolicyCommandDTO("AP-001", CancellationReason.FALTA_DE_PAGAMENTO));
         policies.updated.clear();
 
-        Policy again = cancelPolicy.execute(new CancelPolicyCommand("AP-001", CancellationReason.OUTROS));
+        Policy again = cancelPolicy.execute(new CancelPolicyCommandDTO("AP-001", CancellationReason.OUTROS));
 
         assertThat(again.getCancellationReason()).isEqualTo(CancellationReason.FALTA_DE_PAGAMENTO);
         assertThat(policies.updated).isEmpty();
@@ -55,7 +56,7 @@ class CancelPolicyTest {
     void failsWhenPolicyDoesNotExist() {
         policies.stored = activePolicy("AP-001");
 
-        assertThatThrownBy(() -> cancelPolicy.execute(new CancelPolicyCommand("AP-999", CancellationReason.OUTROS)))
+        assertThatThrownBy(() -> cancelPolicy.execute(new CancelPolicyCommandDTO("AP-999", CancellationReason.OUTROS)))
                 .isInstanceOf(PolicyNotFoundException.class);
         assertThat(policies.updated).isEmpty();
     }

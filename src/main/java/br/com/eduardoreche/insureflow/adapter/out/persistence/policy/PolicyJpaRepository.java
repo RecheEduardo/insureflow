@@ -1,4 +1,4 @@
-package br.com.eduardoreche.insureflow.adapter.out.persistence;
+package br.com.eduardoreche.insureflow.adapter.out.persistence.policy;
 
 import org.springframework.data.jpa.repository.JpaRepository;
 

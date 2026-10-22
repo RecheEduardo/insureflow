@@ -34,6 +34,8 @@ O contrato oficial está versionado em `docs/reference/insurance-patrimonial.yam
 | Datas | `LocalDate` puro (`yyyy-MM-dd`), sem hora nem fuso; vigência inclusiva nas duas pontas |
 | Tempo | O domínio nunca chama `now()`; recebe `today`/`now` de um `Clock` injetado |
 | Modelagem | Records para objetos de valor e DTOs; sem Lombok; sem setters públicos no agregado |
+| DTOs | Sufixo `DTO` em requisições, respostas e comandos de caso de uso, inclusive os records aninhados; ficam em pacote `dto` do domínio (`adapter.in.web.admin.policy.dto`, `application.policy.dto`) |
+| Pacotes por domínio | Cada adapter se organiza por domínio (`adapter.in.web.admin.policy`, `adapter.out.persistence.policy`); o que serve a vários domínios (tratador de exceções, `If-Match`, resposta de erro) fica na raiz do adapter |
 | Dados | Somente fictícios; documento do segurado mascarado; nenhum dado pessoal em log |
 | Imagens Docker | Versões fixas (nunca `latest`) |
 
@@ -171,10 +173,10 @@ br.com.eduardoreche.insureflow
 ├── domain                       Java puro: model, model.enums, exception
 ├── application                  casos de uso, portas (interfaces), transação
 ├── adapter
-│   ├── in.web.admin             API administrativa
+│   ├── in.web.admin             API administrativa, um pacote por domínio (policy)
 │   ├── in.web.openinsurance     API Open Insurance
 │   ├── in.messaging             consumidores Kafka (auditoria, notificação)
-│   ├── out.persistence          JPA, entidade espelho, mapeador, JSONB
+│   ├── out.persistence          um pacote por domínio (policy): JPA, entidade espelho, mapeador, JSONB
 │   └── out.messaging            outbox e repasse para o Kafka
 └── infrastructure               configuração técnica (Clock, OpenAPI, Kafka, interaction id)
 ```
@@ -207,6 +209,7 @@ As decisões não funcionais derivam desta assimetria:
 - Objetos de valor são imutáveis e validados na construção: um objeto inválido não pode existir.
 - Invariantes que dependem do conjunto pertencem à raiz do agregado, não às partes.
 - Exceções carregam código estável e não conhecem HTTP. A tradução é do adapter web.
+- Todas as exceções de negócio ficam em `domain.exception`, inclusive as lançadas pela aplicação ou pelo adapter (`PolicyNotFoundException`, `PolicyVersionMismatchException`): a versão é campo do agregado, e o tratador web encontra todas num lugar só.
 
 ---
 

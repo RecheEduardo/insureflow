@@ -1,4 +1,4 @@
-package br.com.eduardoreche.insureflow.application.policy;
+package br.com.eduardoreche.insureflow.application.policy.dto;
 
 import br.com.eduardoreche.insureflow.domain.model.Insured;
 import br.com.eduardoreche.insureflow.domain.model.InsuredObject;
@@ -10,7 +10,7 @@ import br.com.eduardoreche.insureflow.domain.model.enums.IssuanceType;
 import java.time.LocalDate;
 import java.util.List;
 
-public record IssuePolicyCommand(
+public record IssuePolicyCommandDTO(
         String policyId,
         DocumentType documentType,
         String groupCertificateId,
