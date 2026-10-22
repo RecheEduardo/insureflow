@@ -98,6 +98,11 @@ class IssuePolicyTest {
         }
 
         @Override
+        public Policy update(Policy policy) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
         public Optional<Policy> findByPolicyId(String policyId) {
             return saved.stream().filter(p -> p.getPolicyId().equals(policyId)).findFirst();
         }

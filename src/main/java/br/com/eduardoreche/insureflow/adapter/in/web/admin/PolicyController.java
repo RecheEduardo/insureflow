@@ -1,5 +1,6 @@
 package br.com.eduardoreche.insureflow.adapter.in.web.admin;
 
+import br.com.eduardoreche.insureflow.application.policy.CancelPolicy;
 import br.com.eduardoreche.insureflow.application.policy.GetPolicy;
 import br.com.eduardoreche.insureflow.application.policy.IssuePolicy;
 import br.com.eduardoreche.insureflow.domain.model.Policy;
@@ -21,10 +22,12 @@ class PolicyController {
 
     private final IssuePolicy issuePolicy;
     private final GetPolicy getPolicy;
+    private final CancelPolicy cancelPolicy;
 
-    PolicyController(IssuePolicy issuePolicy, GetPolicy getPolicy) {
+    PolicyController(IssuePolicy issuePolicy, GetPolicy getPolicy, CancelPolicy cancelPolicy) {
         this.issuePolicy = issuePolicy;
         this.getPolicy = getPolicy;
+        this.cancelPolicy = cancelPolicy;
     }
 
     @PostMapping
@@ -39,6 +42,15 @@ class PolicyController {
     @GetMapping("/{policyId}")
     ResponseEntity<PolicyResponse> get(@PathVariable String policyId) {
         Policy policy = getPolicy.execute(policyId);
+        return ResponseEntity.ok()
+                .eTag(eTag(policy))
+                .body(PolicyResponse.from(policy));
+    }
+
+    @PostMapping("/{policyId}/cancellation")
+    ResponseEntity<PolicyResponse> cancel(@PathVariable String policyId,
+                                          @RequestBody(required = false) CancelPolicyRequest request) {
+        Policy policy = cancelPolicy.execute(CancelPolicyRequest.toCommand(policyId, request));
         return ResponseEntity.ok()
                 .eTag(eTag(policy))
                 .body(PolicyResponse.from(policy));

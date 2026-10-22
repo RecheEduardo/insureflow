@@ -36,6 +36,14 @@ class PolicyPersistenceAdapter implements PolicyRepository {
     }
 
     @Override
+    public Policy update(Policy policy) {
+        PolicyJpaEntity entity = jpa.findById(policy.getId()).orElseThrow();
+        mapper.updateEntity(entity, policy);
+        jpa.saveAndFlush(entity);
+        return mapper.toDomain(entity);
+    }
+
+    @Override
     public Optional<Policy> findByPolicyId(String policyId) {
         return jpa.findByPolicyId(policyId).map(mapper::toDomain);
     }

@@ -8,6 +8,7 @@ import br.com.eduardoreche.insureflow.domain.model.InsuredObject;
 import br.com.eduardoreche.insureflow.domain.model.Money;
 import br.com.eduardoreche.insureflow.domain.model.Policy;
 import br.com.eduardoreche.insureflow.domain.model.Term;
+import br.com.eduardoreche.insureflow.domain.model.enums.CancellationReason;
 import br.com.eduardoreche.insureflow.domain.model.enums.CoverageCode;
 import br.com.eduardoreche.insureflow.domain.model.enums.CoverageFeature;
 import br.com.eduardoreche.insureflow.domain.model.enums.CoverageType;
@@ -84,6 +85,31 @@ class PolicyPersistenceAdapterTest {
 
         assertThat(repository.findByPolicyId("AP-001")).contains(issued);
         assertThat(repository.findByPolicyId("AP-999")).isEmpty();
+    }
+
+    @Test
+    void updatePersistsCancellationAndBumpsVersion() {
+        repository.save(policy("AP-001"));
+        Policy loaded = repository.findByPolicyId("AP-001").orElseThrow();
+        loaded.cancel(CancellationReason.PERDA_TOTAL, Instant.parse("2026-11-05T09:30:00Z"));
+
+        Policy updated = repository.update(loaded);
+
+        assertThat(updated.getStatus()).isEqualTo(PolicyStatus.CANCELLED);
+        assertThat(updated.getVersion()).isEqualTo(1L);
+        Policy reloaded = repository.findByPolicyId("AP-001").orElseThrow();
+        assertThat(reloaded.getCancellationReason()).isEqualTo(CancellationReason.PERDA_TOTAL);
+        assertThat(reloaded.getCancelledAt()).isEqualTo(Instant.parse("2026-11-05T09:30:00Z"));
+        assertThat(reloaded.getInsureds()).isEqualTo(loaded.getInsureds());
+    }
+
+    @Test
+    void databaseRejectsCancelledStatusWithoutReason() {
+        repository.save(policy("AP-001"));
+
+        assertThatThrownBy(() -> jdbc.update("UPDATE policy SET status = 'CANCELLED' WHERE policy_id = 'AP-001'"))
+                .isInstanceOf(DataIntegrityViolationException.class)
+                .hasMessageContaining("ck_policy_cancellation");
     }
 
     @Test

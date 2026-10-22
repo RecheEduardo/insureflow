@@ -49,6 +49,21 @@ class PolicyMapper {
         return entity;
     }
 
+    void updateEntity(PolicyJpaEntity entity, Policy policy) {
+        entity.termStartDate = policy.getTerm().startDate();
+        entity.termEndDate = policy.getTerm().endDate();
+        entity.maxLmgAmount = policy.getMaxLmg().amount();
+        entity.maxLmgCurrency = policy.getMaxLmg().currency().getCurrencyCode();
+        entity.productName = policy.getProductName();
+        entity.insureds = json.writeValueAsString(policy.getInsureds());
+        entity.insuredObjects = json.writeValueAsString(policy.getInsuredObjects());
+        entity.status = policy.getStatus().name();
+        entity.cancelledAt = policy.getCancelledAt();
+        entity.cancellationReason = policy.getCancellationReason() == null
+                ? null : policy.getCancellationReason().name();
+        entity.updatedAt = policy.getUpdatedAt();
+    }
+
     Policy toDomain(PolicyJpaEntity entity) {
         return Policy.restore(
                 entity.id,
