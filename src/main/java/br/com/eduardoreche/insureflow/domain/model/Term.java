@@ -5,7 +5,6 @@ import br.com.eduardoreche.insureflow.domain.exception.BusinessRuleViolationExce
 import java.time.LocalDate;
 import java.util.Objects;
 
-// Início e fim inclusivos.
 public record Term(LocalDate startDate, LocalDate endDate) {
 
     public Term {

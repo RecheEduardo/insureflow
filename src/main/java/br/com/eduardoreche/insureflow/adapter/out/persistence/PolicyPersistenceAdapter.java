@@ -1,0 +1,35 @@
+package br.com.eduardoreche.insureflow.adapter.out.persistence;
+
+import br.com.eduardoreche.insureflow.application.policy.PolicyRepository;
+import br.com.eduardoreche.insureflow.domain.exception.DuplicatePolicyException;
+import br.com.eduardoreche.insureflow.domain.model.Policy;
+import org.hibernate.exception.ConstraintViolationException;
+import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.stereotype.Repository;
+
+@Repository
+class PolicyPersistenceAdapter implements PolicyRepository {
+
+    private static final String UNIQUE_POLICY_ID = "uk_policy_policy_id";
+
+    private final PolicyJpaRepository jpa;
+    private final PolicyMapper mapper;
+
+    PolicyPersistenceAdapter(PolicyJpaRepository jpa, PolicyMapper mapper) {
+        this.jpa = jpa;
+        this.mapper = mapper;
+    }
+
+    @Override
+    public void save(Policy policy) {
+        try {
+            jpa.saveAndFlush(mapper.toNewEntity(policy));
+        } catch (DataIntegrityViolationException e) {
+            if (e.getCause() instanceof ConstraintViolationException violation
+                    && UNIQUE_POLICY_ID.equals(violation.getConstraintName())) {
+                throw new DuplicatePolicyException(policy.getPolicyId());
+            }
+            throw e;
+        }
+    }
+}
