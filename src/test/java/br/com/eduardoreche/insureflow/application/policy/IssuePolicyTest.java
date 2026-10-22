@@ -29,6 +29,7 @@ import java.time.LocalDate;
 import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -94,6 +95,11 @@ class IssuePolicyTest {
                 throw new DuplicatePolicyException(policy.getPolicyId());
             }
             saved.add(policy);
+        }
+
+        @Override
+        public Optional<Policy> findByPolicyId(String policyId) {
+            return saved.stream().filter(p -> p.getPolicyId().equals(policyId)).findFirst();
         }
     }
 }

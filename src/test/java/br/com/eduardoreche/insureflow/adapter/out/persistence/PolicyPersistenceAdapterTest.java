@@ -78,6 +78,15 @@ class PolicyPersistenceAdapterTest {
     }
 
     @Test
+    void findsPolicyByPolicyIdThroughThePort() {
+        Policy issued = policy("AP-001");
+        repository.save(issued);
+
+        assertThat(repository.findByPolicyId("AP-001")).contains(issued);
+        assertThat(repository.findByPolicyId("AP-999")).isEmpty();
+    }
+
+    @Test
     void rejectsSecondPolicyWithSamePolicyId() {
         repository.save(policy("AP-001"));
 

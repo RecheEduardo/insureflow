@@ -1,9 +1,12 @@
 package br.com.eduardoreche.insureflow.adapter.in.web.admin;
 
+import br.com.eduardoreche.insureflow.application.policy.GetPolicy;
 import br.com.eduardoreche.insureflow.application.policy.IssuePolicy;
 import br.com.eduardoreche.insureflow.domain.model.Policy;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -17,9 +20,11 @@ import java.net.URI;
 class PolicyController {
 
     private final IssuePolicy issuePolicy;
+    private final GetPolicy getPolicy;
 
-    PolicyController(IssuePolicy issuePolicy) {
+    PolicyController(IssuePolicy issuePolicy, GetPolicy getPolicy) {
         this.issuePolicy = issuePolicy;
+        this.getPolicy = getPolicy;
     }
 
     @PostMapping
@@ -27,8 +32,20 @@ class PolicyController {
         Policy policy = issuePolicy.execute(request.toCommand());
         return ResponseEntity
                 .created(location(policy))
-                .eTag("\"" + policy.getVersion() + "\"")
+                .eTag(eTag(policy))
                 .body(new IssuedPolicyResponse(policy.getPolicyId(), policy.getStatus().name(), policy.getVersion()));
+    }
+
+    @GetMapping("/{policyId}")
+    ResponseEntity<PolicyResponse> get(@PathVariable String policyId) {
+        Policy policy = getPolicy.execute(policyId);
+        return ResponseEntity.ok()
+                .eTag(eTag(policy))
+                .body(PolicyResponse.from(policy));
+    }
+
+    private static String eTag(Policy policy) {
+        return "\"" + policy.getVersion() + "\"";
     }
 
     private static URI location(Policy policy) {

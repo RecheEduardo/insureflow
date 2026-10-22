@@ -7,6 +7,8 @@ import org.hibernate.exception.ConstraintViolationException;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Repository;
 
+import java.util.Optional;
+
 @Repository
 class PolicyPersistenceAdapter implements PolicyRepository {
 
@@ -31,5 +33,10 @@ class PolicyPersistenceAdapter implements PolicyRepository {
             }
             throw e;
         }
+    }
+
+    @Override
+    public Optional<Policy> findByPolicyId(String policyId) {
+        return jpa.findByPolicyId(policyId).map(mapper::toDomain);
     }
 }

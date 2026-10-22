@@ -1,5 +1,6 @@
 package br.com.eduardoreche.insureflow.infrastructure;
 
+import br.com.eduardoreche.insureflow.application.policy.GetPolicy;
 import br.com.eduardoreche.insureflow.application.policy.IssuePolicy;
 import br.com.eduardoreche.insureflow.application.policy.PolicyRepository;
 import org.springframework.context.annotation.Bean;
@@ -14,6 +15,11 @@ class ApplicationConfig {
     @Bean
     Clock clock() {
         return Clock.system(ZoneId.of("America/Sao_Paulo"));
+    }
+
+    @Bean
+    GetPolicy getPolicy(PolicyRepository policies) {
+        return new GetPolicy(policies);
     }
 
     @Bean
