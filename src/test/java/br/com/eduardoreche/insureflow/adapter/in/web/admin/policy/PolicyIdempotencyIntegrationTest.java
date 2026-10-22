@@ -121,6 +121,33 @@ class PolicyIdempotencyIntegrationTest {
         assertThat(policiesWithId("AP-IDEM-5")).isOne();
     }
 
+    @Test
+    void concurrentRequestsWithDifferentKeysForTheSamePolicyIdIssueExactlyOne() throws Exception {
+        int requests = 8;
+        CountDownLatch start = new CountDownLatch(1);
+
+        List<HttpResponse<String>> responses;
+        try (ExecutorService executor = Executors.newVirtualThreadPerTaskExecutor()) {
+            List<Future<HttpResponse<String>>> futures = IntStream.range(0, requests)
+                    .mapToObj(i -> executor.submit(() -> {
+                        start.await();
+                        return issue("key-race-" + i, body("AP-RACE-1", "200000.00"));
+                    }))
+                    .toList();
+            start.countDown();
+            responses = futures.stream().map(PolicyIdempotencyIntegrationTest::join).toList();
+        }
+
+        assertThat(responses).extracting(HttpResponse::statusCode).filteredOn(s -> s == 201).hasSize(1);
+        assertThat(responses).extracting(HttpResponse::statusCode).filteredOn(s -> s != 201)
+                .hasSize(requests - 1).containsOnly(409);
+        assertThat(responses).filteredOn(r -> r.statusCode() == 409)
+                .allSatisfy(r -> assertThat(r.body()).contains("POLICY_DUPLICATE"));
+        assertThat(policiesWithId("AP-RACE-1")).isOne();
+        assertThat(jdbc.queryForObject("SELECT count(*) FROM idempotency_record WHERE idempotency_key LIKE 'key-race-%'",
+                Integer.class)).isOne();
+    }
+
     private HttpResponse<String> issue(String idempotencyKey, String body) throws Exception {
         return http.send(HttpRequest.newBuilder(uri("/api/v1/policies"))
                 .header("Content-Type", "application/json")
