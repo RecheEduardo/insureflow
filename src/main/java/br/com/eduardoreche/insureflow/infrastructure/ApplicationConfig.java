@@ -1,49 +1,18 @@
 package br.com.eduardoreche.insureflow.infrastructure;
 
-import br.com.eduardoreche.insureflow.application.policy.CancelPolicy;
-import br.com.eduardoreche.insureflow.application.policy.EndorsePolicy;
-import br.com.eduardoreche.insureflow.application.policy.GetPolicy;
-import br.com.eduardoreche.insureflow.application.policy.IdempotencyRecordRepository;
-import br.com.eduardoreche.insureflow.application.policy.IssuePolicy;
-import br.com.eduardoreche.insureflow.application.policy.ListPolicies;
-import br.com.eduardoreche.insureflow.application.policy.PolicyQueryRepository;
-import br.com.eduardoreche.insureflow.application.policy.PolicyRepository;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.scheduling.annotation.EnableScheduling;
 
 import java.time.Clock;
 import java.time.ZoneId;
 
 @Configuration
+@EnableScheduling
 class ApplicationConfig {
 
     @Bean
     Clock clock() {
         return Clock.system(ZoneId.of("America/Sao_Paulo"));
-    }
-
-    @Bean
-    CancelPolicy cancelPolicy(PolicyRepository policies, Clock clock) {
-        return new CancelPolicy(policies, clock);
-    }
-
-    @Bean
-    EndorsePolicy endorsePolicy(PolicyRepository policies, Clock clock) {
-        return new EndorsePolicy(policies, clock);
-    }
-
-    @Bean
-    GetPolicy getPolicy(PolicyRepository policies) {
-        return new GetPolicy(policies);
-    }
-
-    @Bean
-    ListPolicies listPolicies(PolicyQueryRepository policies) {
-        return new ListPolicies(policies);
-    }
-
-    @Bean
-    IssuePolicy issuePolicy(PolicyRepository policies, IdempotencyRecordRepository idempotencyRecords, Clock clock) {
-        return new IssuePolicy(policies, idempotencyRecords, clock);
     }
 }
