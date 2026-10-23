@@ -1,8 +1,9 @@
 package br.com.eduardoreche.insureflow.adapter.in.web.openinsurance.policy;
 
-import br.com.eduardoreche.insureflow.application.policy.GetPolicy;
-import br.com.eduardoreche.insureflow.application.policy.ListPolicies;
 import br.com.eduardoreche.insureflow.application.policy.PolicyFixtures;
+import br.com.eduardoreche.insureflow.application.policy.event.dto.PolicySnapshotDTO;
+import br.com.eduardoreche.insureflow.application.policy.readmodel.GetPolicyInfo;
+import br.com.eduardoreche.insureflow.application.policy.readmodel.ListPolicyInfo;
 import br.com.eduardoreche.insureflow.domain.exception.PolicyNotFoundException;
 import br.com.eduardoreche.insureflow.domain.model.Policy;
 import br.com.eduardoreche.insureflow.domain.model.enums.CancellationReason;
@@ -42,14 +43,14 @@ class PolicyInfoControllerTest {
     MockMvc mvc;
 
     @MockitoBean
-    GetPolicy getPolicy;
+    GetPolicyInfo getPolicyInfo;
 
     @MockitoBean
-    ListPolicies listPolicies;
+    ListPolicyInfo listPolicyInfo;
 
     @Test
     void answersWithTheMappedFieldsOfThePolicy() throws Exception {
-        when(getPolicy.execute("AP-001")).thenReturn(PolicyFixtures.activePolicy("AP-001"));
+        when(getPolicyInfo.execute("AP-001")).thenReturn(PolicySnapshotDTO.from(PolicyFixtures.activePolicy("AP-001")));
 
         mvc.perform(get(URL))
                 .andExpect(status().isOk())
@@ -73,7 +74,7 @@ class PolicyInfoControllerTest {
 
     @Test
     void masksTheInsuredDocumentKeepingOnlyTheLastTwoDigits() throws Exception {
-        when(getPolicy.execute("AP-001")).thenReturn(PolicyFixtures.activePolicy("AP-001"));
+        when(getPolicyInfo.execute("AP-001")).thenReturn(PolicySnapshotDTO.from(PolicyFixtures.activePolicy("AP-001")));
 
         mvc.perform(get(URL))
                 .andExpect(jsonPath("$.insureds[0].identification").value("***01"));
@@ -81,7 +82,7 @@ class PolicyInfoControllerTest {
 
     @Test
     void omitsOptionalFieldsThatAreAbsent() throws Exception {
-        when(getPolicy.execute("AP-001")).thenReturn(PolicyFixtures.activePolicy("AP-001"));
+        when(getPolicyInfo.execute("AP-001")).thenReturn(PolicySnapshotDTO.from(PolicyFixtures.activePolicy("AP-001")));
 
         mvc.perform(get(URL))
                 .andExpect(jsonPath("$.groupCertificateId").doesNotExist())
@@ -93,7 +94,7 @@ class PolicyInfoControllerTest {
     void keepsShowingACancelledPolicyWithoutAStatusField() throws Exception {
         Policy policy = PolicyFixtures.activePolicy("AP-001");
         policy.cancel(CancellationReason.OUTROS, PolicyFixtures.NOW);
-        when(getPolicy.execute("AP-001")).thenReturn(policy);
+        when(getPolicyInfo.execute("AP-001")).thenReturn(PolicySnapshotDTO.from(policy));
 
         mvc.perform(get(URL))
                 .andExpect(status().isOk())
@@ -104,7 +105,7 @@ class PolicyInfoControllerTest {
 
     @Test
     void answers404WhenThePolicyDoesNotExist() throws Exception {
-        when(getPolicy.execute("AP-001")).thenThrow(new PolicyNotFoundException("AP-001"));
+        when(getPolicyInfo.execute("AP-001")).thenThrow(new PolicyNotFoundException("AP-001"));
 
         mvc.perform(get(URL))
                 .andExpect(status().isNotFound())

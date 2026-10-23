@@ -1,9 +1,9 @@
 package br.com.eduardoreche.insureflow.adapter.in.web.openinsurance.policy;
 
-import br.com.eduardoreche.insureflow.application.policy.GetPolicy;
-import br.com.eduardoreche.insureflow.application.policy.ListPolicies;
-import br.com.eduardoreche.insureflow.application.policy.dto.PolicyPageDTO;
-import br.com.eduardoreche.insureflow.application.policy.dto.PolicySummaryDTO;
+import br.com.eduardoreche.insureflow.application.policy.readmodel.GetPolicyInfo;
+import br.com.eduardoreche.insureflow.application.policy.readmodel.ListPolicyInfo;
+import br.com.eduardoreche.insureflow.application.policy.readmodel.dto.PolicyInfoPageDTO;
+import br.com.eduardoreche.insureflow.application.policy.readmodel.dto.PolicyInfoSummaryDTO;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.TestConfiguration;
@@ -43,16 +43,16 @@ class PolicyListControllerTest {
     MockMvc mvc;
 
     @MockitoBean
-    ListPolicies listPolicies;
+    ListPolicyInfo listPolicyInfo;
 
     @MockitoBean
-    GetPolicy getPolicy;
+    GetPolicyInfo getPolicyInfo;
 
     @Test
     void listsPolicyIdentificationWithPaginationTotals() throws Exception {
-        when(listPolicies.execute(1, 25)).thenReturn(new PolicyPageDTO(
-                List.of(new PolicySummaryDTO("AP-001", "Residencial Essencial"),
-                        new PolicySummaryDTO("AP-002", "Empresarial Plus")), 2, 1));
+        when(listPolicyInfo.execute(1, 25)).thenReturn(new PolicyInfoPageDTO(
+                List.of(new PolicyInfoSummaryDTO("AP-001", "Residencial Essencial"),
+                        new PolicyInfoSummaryDTO("AP-002", "Empresarial Plus")), 2, 1));
 
         mvc.perform(get(URL))
                 .andExpect(status().isOk())
@@ -65,7 +65,7 @@ class PolicyListControllerTest {
 
     @Test
     void answers200WithAnEmptyListWhenThereAreNoPolicies() throws Exception {
-        when(listPolicies.execute(1, 25)).thenReturn(new PolicyPageDTO(List.of(), 0, 0));
+        when(listPolicyInfo.execute(1, 25)).thenReturn(new PolicyInfoPageDTO(List.of(), 0, 0));
 
         mvc.perform(get(URL))
                 .andExpect(status().isOk())
@@ -76,11 +76,11 @@ class PolicyListControllerTest {
 
     @Test
     void passesTheRequestedPageAndSizeToTheUseCase() throws Exception {
-        when(listPolicies.execute(3, 1000)).thenReturn(new PolicyPageDTO(List.of(), 0, 0));
+        when(listPolicyInfo.execute(3, 1000)).thenReturn(new PolicyInfoPageDTO(List.of(), 0, 0));
 
         mvc.perform(get(URL).param("page", "3").param("page-size", "1000")).andExpect(status().isOk());
 
-        verify(listPolicies).execute(3, 1000);
+        verify(listPolicyInfo).execute(3, 1000);
     }
 
     @Test
@@ -89,7 +89,7 @@ class PolicyListControllerTest {
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.errors[0].code").value("INVALID_REQUEST"));
 
-        verifyNoInteractions(listPolicies);
+        verifyNoInteractions(listPolicyInfo);
     }
 
     @Test
@@ -98,7 +98,7 @@ class PolicyListControllerTest {
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.errors[0].code").value("INVALID_REQUEST"));
 
-        verifyNoInteractions(listPolicies);
+        verifyNoInteractions(listPolicyInfo);
     }
 
     @Test

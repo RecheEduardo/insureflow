@@ -2,9 +2,8 @@ package br.com.eduardoreche.insureflow.adapter.in.web.openinsurance.policy;
 
 import br.com.eduardoreche.insureflow.adapter.in.web.openinsurance.policy.dto.PolicyInfoResponseDTO;
 import br.com.eduardoreche.insureflow.adapter.in.web.openinsurance.policy.dto.PolicyListResponseDTO;
-import br.com.eduardoreche.insureflow.application.policy.GetPolicy;
-import br.com.eduardoreche.insureflow.application.policy.ListPolicies;
-import br.com.eduardoreche.insureflow.domain.model.Policy;
+import br.com.eduardoreche.insureflow.application.policy.readmodel.GetPolicyInfo;
+import br.com.eduardoreche.insureflow.application.policy.readmodel.ListPolicyInfo;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -24,15 +23,17 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping("/insurance-patrimonial")
 class OpenInsurancePolicyController {
 
-    private final ListPolicies listPolicies;
-    private final GetPolicy getPolicy;
+    private final ListPolicyInfo listPolicyInfo;
+    private final GetPolicyInfo getPolicyInfo;
 
-    OpenInsurancePolicyController(ListPolicies listPolicies, GetPolicy getPolicy) {
-        this.listPolicies = listPolicies;
-        this.getPolicy = getPolicy;
+    OpenInsurancePolicyController(ListPolicyInfo listPolicyInfo, GetPolicyInfo getPolicyInfo) {
+        this.listPolicyInfo = listPolicyInfo;
+        this.getPolicyInfo = getPolicyInfo;
     }
 
-    @Operation(summary = "Lista as apólices", description = "Paginação simples, começando na página 1.")
+    @Operation(summary = "Lista as apólices",
+            description = "Paginação simples, começando na página 1. Lê a projeção alimentada pelos eventos: "
+                    + "uma alteração recente pode levar alguns instantes para aparecer.")
     @ApiResponse(responseCode = "200", description = "Página de apólices.")
     @ApiResponse(responseCode = "400", description = "page ou page-size fora dos limites.")
     @GetMapping
@@ -40,17 +41,18 @@ class OpenInsurancePolicyController {
                                                @RequestParam(name = "page-size", defaultValue = "25")
                                                @Min(1) @Max(1000) int pageSize) {
         return ResponseEntity.ok()
-                .body(PolicyListResponseDTO.from(listPolicies.execute(page, pageSize)));
+                .body(PolicyListResponseDTO.from(listPolicyInfo.execute(page, pageSize)));
     }
 
     @Operation(summary = "Consulta os dados de uma apólice",
-            description = "O documento do segurado sai mascarado. Apólices canceladas continuam visíveis.")
+            description = "O documento do segurado sai mascarado. Apólices canceladas continuam visíveis. "
+                    + "Lê a projeção alimentada pelos eventos: uma alteração recente pode levar alguns instantes "
+                    + "para aparecer.")
     @ApiResponse(responseCode = "200", description = "Dados da apólice.")
     @ApiResponse(responseCode = "404", description = "Apólice não encontrada (POLICY_NOT_FOUND).")
     @GetMapping("/{policyId}/policy-info")
     ResponseEntity<PolicyInfoResponseDTO> get(@Parameter(example = "AP-2026-000123") @PathVariable String policyId) {
-        Policy policy = getPolicy.execute(policyId);
         return ResponseEntity.ok()
-                .body(PolicyInfoResponseDTO.from(policy));
+                .body(PolicyInfoResponseDTO.from(getPolicyInfo.execute(policyId)));
     }
 }

@@ -1,11 +1,11 @@
 package br.com.eduardoreche.insureflow.adapter.in.web.openinsurance.policy.dto;
 
+import br.com.eduardoreche.insureflow.application.policy.event.dto.PolicySnapshotDTO;
 import br.com.eduardoreche.insureflow.domain.model.Address;
 import br.com.eduardoreche.insureflow.domain.model.Coverage;
 import br.com.eduardoreche.insureflow.domain.model.Insured;
 import br.com.eduardoreche.insureflow.domain.model.InsuredObject;
 import br.com.eduardoreche.insureflow.domain.model.Money;
-import br.com.eduardoreche.insureflow.domain.model.Policy;
 import br.com.eduardoreche.insureflow.domain.model.enums.CoverageCode;
 import br.com.eduardoreche.insureflow.domain.model.enums.CoverageFeature;
 import br.com.eduardoreche.insureflow.domain.model.enums.CoverageType;
@@ -36,19 +36,19 @@ public record PolicyInfoResponseDTO(
         List<InsuredDTO> insureds,
         List<InsuredObjectDTO> insuredObjects) {
 
-    public static PolicyInfoResponseDTO from(Policy policy) {
+    public static PolicyInfoResponseDTO from(PolicySnapshotDTO policy) {
         return new PolicyInfoResponseDTO(
-                policy.getDocumentType(),
-                policy.getPolicyId(),
-                policy.getGroupCertificateId(),
-                policy.getIssuanceType(),
-                policy.getIssuanceDate(),
-                policy.getTerm().startDate(),
-                policy.getTerm().endDate(),
-                AmountDetailsDTO.from(policy.getMaxLmg()),
-                policy.getProposalId(),
-                policy.getInsureds().stream().map(InsuredDTO::from).toList(),
-                policy.getInsuredObjects().stream().map(InsuredObjectDTO::from).toList());
+                policy.documentType(),
+                policy.policyId(),
+                policy.groupCertificateId(),
+                policy.issuanceType(),
+                policy.issuanceDate(),
+                policy.term().startDate(),
+                policy.term().endDate(),
+                AmountDetailsDTO.from(policy.maxLmg()),
+                policy.proposalId(),
+                policy.insureds().stream().map(InsuredDTO::from).toList(),
+                policy.insuredObjects().stream().map(InsuredObjectDTO::from).toList());
     }
 
     public record AmountDetailsDTO(@Schema(example = "200000.00") String amount,

@@ -1,10 +1,11 @@
 package br.com.eduardoreche.insureflow.adapter.in.web;
 
-import br.com.eduardoreche.insureflow.application.policy.CancelPolicy;
-import br.com.eduardoreche.insureflow.application.policy.EndorsePolicy;
-import br.com.eduardoreche.insureflow.application.policy.GetPolicy;
-import br.com.eduardoreche.insureflow.application.policy.IssuePolicy;
-import br.com.eduardoreche.insureflow.application.policy.ListPolicies;
+import br.com.eduardoreche.insureflow.application.policy.command.CancelPolicy;
+import br.com.eduardoreche.insureflow.application.policy.command.EndorsePolicy;
+import br.com.eduardoreche.insureflow.application.policy.command.IssuePolicy;
+import br.com.eduardoreche.insureflow.application.policy.query.GetPolicy;
+import br.com.eduardoreche.insureflow.application.policy.readmodel.GetPolicyInfo;
+import br.com.eduardoreche.insureflow.application.policy.readmodel.ListPolicyInfo;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.TestConfiguration;
@@ -57,7 +58,10 @@ class ApiExceptionHandlerTest {
     EndorsePolicy endorsePolicy;
 
     @MockitoBean
-    ListPolicies listPolicies;
+    ListPolicyInfo listPolicyInfo;
+
+    @MockitoBean
+    GetPolicyInfo getPolicyInfo;
 
     @Test
     void answersAnUnknownRouteWith404InTheErrorEnvelope() throws Exception {
