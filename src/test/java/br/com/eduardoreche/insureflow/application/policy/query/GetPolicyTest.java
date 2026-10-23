@@ -1,5 +1,6 @@
-package br.com.eduardoreche.insureflow.application.policy;
+package br.com.eduardoreche.insureflow.application.policy.query;
 
+import br.com.eduardoreche.insureflow.application.policy.port.PolicyRepository;
 import br.com.eduardoreche.insureflow.domain.exception.PolicyNotFoundException;
 import br.com.eduardoreche.insureflow.domain.model.Policy;
 import br.com.eduardoreche.insureflow.domain.model.enums.CancellationReason;

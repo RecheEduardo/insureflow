@@ -1,11 +1,11 @@
 package br.com.eduardoreche.insureflow.adapter.in.web.admin.policy;
 
-import br.com.eduardoreche.insureflow.application.policy.CancelPolicy;
-import br.com.eduardoreche.insureflow.application.policy.EndorsePolicy;
-import br.com.eduardoreche.insureflow.application.policy.GetPolicy;
-import br.com.eduardoreche.insureflow.application.policy.IssuePolicy;
-import br.com.eduardoreche.insureflow.application.policy.dto.IdempotencyKeyDTO;
-import br.com.eduardoreche.insureflow.application.policy.dto.IssuePolicyResultDTO;
+import br.com.eduardoreche.insureflow.application.policy.command.CancelPolicy;
+import br.com.eduardoreche.insureflow.application.policy.command.EndorsePolicy;
+import br.com.eduardoreche.insureflow.application.policy.command.IssuePolicy;
+import br.com.eduardoreche.insureflow.application.policy.command.dto.IdempotencyKeyDTO;
+import br.com.eduardoreche.insureflow.application.policy.command.dto.IssuePolicyResultDTO;
+import br.com.eduardoreche.insureflow.application.policy.query.GetPolicy;
 import br.com.eduardoreche.insureflow.domain.exception.BusinessRuleViolationException;
 import br.com.eduardoreche.insureflow.domain.exception.DuplicatePolicyException;
 import br.com.eduardoreche.insureflow.domain.model.enums.PolicyStatus;

@@ -1,9 +1,9 @@
 package br.com.eduardoreche.insureflow.adapter.in.web.admin.policy;
 
-import br.com.eduardoreche.insureflow.application.policy.CancelPolicy;
-import br.com.eduardoreche.insureflow.application.policy.EndorsePolicy;
-import br.com.eduardoreche.insureflow.application.policy.GetPolicy;
-import br.com.eduardoreche.insureflow.application.policy.IssuePolicy;
+import br.com.eduardoreche.insureflow.application.policy.command.CancelPolicy;
+import br.com.eduardoreche.insureflow.application.policy.command.EndorsePolicy;
+import br.com.eduardoreche.insureflow.application.policy.command.IssuePolicy;
+import br.com.eduardoreche.insureflow.application.policy.query.GetPolicy;
 import br.com.eduardoreche.insureflow.domain.exception.PolicyNotFoundException;
 import br.com.eduardoreche.insureflow.domain.model.Policy;
 import br.com.eduardoreche.insureflow.domain.model.enums.CancellationReason;

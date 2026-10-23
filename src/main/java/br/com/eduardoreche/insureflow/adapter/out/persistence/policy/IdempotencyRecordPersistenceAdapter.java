@@ -1,8 +1,8 @@
 package br.com.eduardoreche.insureflow.adapter.out.persistence.policy;
 
-import br.com.eduardoreche.insureflow.application.policy.IdempotencyRecord;
-import br.com.eduardoreche.insureflow.application.policy.IdempotencyRecordRepository;
-import br.com.eduardoreche.insureflow.application.policy.dto.IssuePolicyResultDTO;
+import br.com.eduardoreche.insureflow.application.policy.command.IdempotencyRecord;
+import br.com.eduardoreche.insureflow.application.policy.command.dto.IssuePolicyResultDTO;
+import br.com.eduardoreche.insureflow.application.policy.port.IdempotencyRecordRepository;
 import br.com.eduardoreche.insureflow.domain.model.enums.PolicyStatus;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.simple.JdbcClient;

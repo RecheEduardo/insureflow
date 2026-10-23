@@ -2,7 +2,7 @@ package br.com.eduardoreche.insureflow.adapter.in.web.admin.policy.dto;
 
 import br.com.eduardoreche.insureflow.adapter.in.web.admin.policy.dto.IssuePolicyRequestDTO.InsuredObjectRequestDTO;
 import br.com.eduardoreche.insureflow.adapter.in.web.admin.policy.dto.IssuePolicyRequestDTO.InsuredRequestDTO;
-import br.com.eduardoreche.insureflow.application.policy.dto.EndorsePolicyCommandDTO;
+import br.com.eduardoreche.insureflow.application.policy.command.dto.EndorsePolicyCommandDTO;
 import br.com.eduardoreche.insureflow.domain.model.Money;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Pattern;

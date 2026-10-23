@@ -1,6 +1,6 @@
 package br.com.eduardoreche.insureflow.adapter.in.web.admin.policy.dto;
 
-import br.com.eduardoreche.insureflow.application.policy.dto.CancelPolicyCommandDTO;
+import br.com.eduardoreche.insureflow.application.policy.command.dto.CancelPolicyCommandDTO;
 import br.com.eduardoreche.insureflow.domain.model.enums.CancellationReason;
 
 public record CancelPolicyRequestDTO(CancellationReason reason) {

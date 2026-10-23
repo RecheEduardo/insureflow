@@ -1,6 +1,6 @@
 package br.com.eduardoreche.insureflow.adapter.in.web.admin;
 
-import br.com.eduardoreche.insureflow.application.policy.dto.IdempotencyKeyDTO;
+import br.com.eduardoreche.insureflow.application.policy.command.dto.IdempotencyKeyDTO;
 
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;

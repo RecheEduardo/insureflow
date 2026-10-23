@@ -1,6 +1,6 @@
 package br.com.eduardoreche.insureflow.adapter.in.web.admin.policy.dto;
 
-import br.com.eduardoreche.insureflow.application.policy.dto.IssuePolicyCommandDTO;
+import br.com.eduardoreche.insureflow.application.policy.command.dto.IssuePolicyCommandDTO;
 import br.com.eduardoreche.insureflow.domain.model.Address;
 import br.com.eduardoreche.insureflow.domain.model.Coverage;
 import br.com.eduardoreche.insureflow.domain.model.Insured;

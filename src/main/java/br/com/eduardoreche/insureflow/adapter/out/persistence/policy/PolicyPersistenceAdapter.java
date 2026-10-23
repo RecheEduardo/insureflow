@@ -1,6 +1,6 @@
 package br.com.eduardoreche.insureflow.adapter.out.persistence.policy;
 
-import br.com.eduardoreche.insureflow.application.policy.PolicyRepository;
+import br.com.eduardoreche.insureflow.application.policy.port.PolicyRepository;
 import br.com.eduardoreche.insureflow.domain.exception.DuplicatePolicyException;
 import br.com.eduardoreche.insureflow.domain.model.Policy;
 import org.hibernate.exception.ConstraintViolationException;

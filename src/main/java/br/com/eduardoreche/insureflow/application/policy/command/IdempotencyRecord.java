@@ -1,6 +1,6 @@
-package br.com.eduardoreche.insureflow.application.policy;
+package br.com.eduardoreche.insureflow.application.policy.command;
 
-import br.com.eduardoreche.insureflow.application.policy.dto.IssuePolicyResultDTO;
+import br.com.eduardoreche.insureflow.application.policy.command.dto.IssuePolicyResultDTO;
 
 import java.time.Instant;
 

@@ -7,11 +7,11 @@ import br.com.eduardoreche.insureflow.adapter.in.web.admin.policy.dto.EndorsePol
 import br.com.eduardoreche.insureflow.adapter.in.web.admin.policy.dto.IssuePolicyRequestDTO;
 import br.com.eduardoreche.insureflow.adapter.in.web.admin.policy.dto.IssuedPolicyResponseDTO;
 import br.com.eduardoreche.insureflow.adapter.in.web.admin.policy.dto.PolicyResponseDTO;
-import br.com.eduardoreche.insureflow.application.policy.CancelPolicy;
-import br.com.eduardoreche.insureflow.application.policy.EndorsePolicy;
-import br.com.eduardoreche.insureflow.application.policy.GetPolicy;
-import br.com.eduardoreche.insureflow.application.policy.IssuePolicy;
-import br.com.eduardoreche.insureflow.application.policy.dto.IssuePolicyResultDTO;
+import br.com.eduardoreche.insureflow.application.policy.command.CancelPolicy;
+import br.com.eduardoreche.insureflow.application.policy.command.EndorsePolicy;
+import br.com.eduardoreche.insureflow.application.policy.command.IssuePolicy;
+import br.com.eduardoreche.insureflow.application.policy.command.dto.IssuePolicyResultDTO;
+import br.com.eduardoreche.insureflow.application.policy.query.GetPolicy;
 import br.com.eduardoreche.insureflow.domain.model.Policy;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;

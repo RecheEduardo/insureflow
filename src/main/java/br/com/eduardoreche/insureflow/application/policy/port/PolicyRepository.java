@@ -1,4 +1,4 @@
-package br.com.eduardoreche.insureflow.application.policy;
+package br.com.eduardoreche.insureflow.application.policy.port;
 
 import br.com.eduardoreche.insureflow.domain.model.Policy;
 

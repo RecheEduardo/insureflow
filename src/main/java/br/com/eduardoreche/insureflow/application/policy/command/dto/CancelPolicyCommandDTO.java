@@ -1,4 +1,4 @@
-package br.com.eduardoreche.insureflow.application.policy.dto;
+package br.com.eduardoreche.insureflow.application.policy.command.dto;
 
 import br.com.eduardoreche.insureflow.domain.model.enums.CancellationReason;
 
