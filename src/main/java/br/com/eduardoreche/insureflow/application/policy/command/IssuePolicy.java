@@ -1,8 +1,13 @@
-package br.com.eduardoreche.insureflow.application.policy;
+package br.com.eduardoreche.insureflow.application.policy.command;
 
-import br.com.eduardoreche.insureflow.application.policy.dto.IdempotencyKeyDTO;
-import br.com.eduardoreche.insureflow.application.policy.dto.IssuePolicyCommandDTO;
-import br.com.eduardoreche.insureflow.application.policy.dto.IssuePolicyResultDTO;
+import br.com.eduardoreche.insureflow.application.policy.command.dto.IdempotencyKeyDTO;
+import br.com.eduardoreche.insureflow.application.policy.command.dto.IssuePolicyCommandDTO;
+import br.com.eduardoreche.insureflow.application.policy.command.dto.IssuePolicyResultDTO;
+import br.com.eduardoreche.insureflow.application.policy.event.PolicyEventType;
+import br.com.eduardoreche.insureflow.application.policy.event.dto.PolicyEventDTO;
+import br.com.eduardoreche.insureflow.application.policy.port.IdempotencyRecordRepository;
+import br.com.eduardoreche.insureflow.application.policy.port.PolicyEventOutbox;
+import br.com.eduardoreche.insureflow.application.policy.port.PolicyRepository;
 import br.com.eduardoreche.insureflow.domain.exception.BusinessRuleViolationException;
 import br.com.eduardoreche.insureflow.domain.model.Policy;
 import org.springframework.transaction.annotation.Transactional;
@@ -16,11 +21,14 @@ public class IssuePolicy {
 
     private final PolicyRepository policies;
     private final IdempotencyRecordRepository idempotencyRecords;
+    private final PolicyEventOutbox events;
     private final Clock clock;
 
-    public IssuePolicy(PolicyRepository policies, IdempotencyRecordRepository idempotencyRecords, Clock clock) {
+    public IssuePolicy(PolicyRepository policies, IdempotencyRecordRepository idempotencyRecords,
+                       PolicyEventOutbox events, Clock clock) {
         this.policies = policies;
         this.idempotencyRecords = idempotencyRecords;
+        this.events = events;
         this.clock = clock;
     }
 
@@ -43,6 +51,7 @@ public class IssuePolicy {
         }
 
         policies.save(policy);
+        events.append(PolicyEventDTO.of(PolicyEventType.POLICY_ISSUED, policy));
         return result;
     }
 

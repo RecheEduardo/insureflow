@@ -1,6 +1,10 @@
-package br.com.eduardoreche.insureflow.application.policy;
+package br.com.eduardoreche.insureflow.application.policy.command;
 
-import br.com.eduardoreche.insureflow.application.policy.dto.EndorsePolicyCommandDTO;
+import br.com.eduardoreche.insureflow.application.policy.command.dto.EndorsePolicyCommandDTO;
+import br.com.eduardoreche.insureflow.application.policy.event.PolicyEventType;
+import br.com.eduardoreche.insureflow.application.policy.event.dto.PolicyEventDTO;
+import br.com.eduardoreche.insureflow.application.policy.port.PolicyEventOutbox;
+import br.com.eduardoreche.insureflow.application.policy.port.PolicyRepository;
 import br.com.eduardoreche.insureflow.domain.exception.BusinessRuleViolationException;
 import br.com.eduardoreche.insureflow.domain.exception.PolicyNotFoundException;
 import br.com.eduardoreche.insureflow.domain.exception.PolicyVersionMismatchException;
@@ -14,10 +18,12 @@ import java.time.Instant;
 public class EndorsePolicy {
 
     private final PolicyRepository policies;
+    private final PolicyEventOutbox events;
     private final Clock clock;
 
-    public EndorsePolicy(PolicyRepository policies, Clock clock) {
+    public EndorsePolicy(PolicyRepository policies, PolicyEventOutbox events, Clock clock) {
         this.policies = policies;
+        this.events = events;
         this.clock = clock;
     }
 
@@ -43,6 +49,8 @@ public class EndorsePolicy {
                 command.insureds() != null ? command.insureds() : policy.getInsureds(),
                 command.insuredObjects() != null ? command.insuredObjects() : policy.getInsuredObjects(),
                 Instant.now(clock));
-        return policies.update(policy);
+        Policy endorsed = policies.update(policy);
+        events.append(PolicyEventDTO.of(PolicyEventType.POLICY_ENDORSED, endorsed));
+        return endorsed;
     }
 }

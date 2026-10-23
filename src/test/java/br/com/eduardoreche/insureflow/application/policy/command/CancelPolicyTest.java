@@ -1,6 +1,10 @@
-package br.com.eduardoreche.insureflow.application.policy;
+package br.com.eduardoreche.insureflow.application.policy.command;
 
-import br.com.eduardoreche.insureflow.application.policy.dto.CancelPolicyCommandDTO;
+import br.com.eduardoreche.insureflow.application.policy.command.dto.CancelPolicyCommandDTO;
+import br.com.eduardoreche.insureflow.application.policy.event.PolicyEventType;
+import br.com.eduardoreche.insureflow.application.policy.event.dto.PolicyEventDTO;
+import br.com.eduardoreche.insureflow.application.policy.port.PolicyEventOutbox;
+import br.com.eduardoreche.insureflow.application.policy.port.PolicyRepository;
 import br.com.eduardoreche.insureflow.domain.exception.PolicyNotFoundException;
 import br.com.eduardoreche.insureflow.domain.model.Policy;
 import br.com.eduardoreche.insureflow.domain.model.enums.CancellationReason;
@@ -13,8 +17,10 @@ import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 import static br.com.eduardoreche.insureflow.application.policy.PolicyFixtures.activePolicy;
+import static br.com.eduardoreche.insureflow.application.policy.PolicyFixtures.withNextVersion;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
@@ -24,7 +30,8 @@ class CancelPolicyTest {
     private static final Clock CLOCK = Clock.fixed(CANCELLATION_TIME, ZoneOffset.UTC);
 
     private final FakePolicyRepository policies = new FakePolicyRepository();
-    private final CancelPolicy cancelPolicy = new CancelPolicy(policies, CLOCK);
+    private final FakePolicyEventOutbox events = new FakePolicyEventOutbox();
+    private final CancelPolicy cancelPolicy = new CancelPolicy(policies, events, CLOCK);
 
     @Test
     void cancelsActivePolicyKeepingItInTheRepository() {
@@ -41,15 +48,32 @@ class CancelPolicyTest {
     }
 
     @Test
+    void recordsAPolicyCancelledEventWithTheVersionSavedByTheRepository() {
+        policies.stored = activePolicy("AP-001");
+
+        cancelPolicy.execute(new CancelPolicyCommandDTO("AP-001", CancellationReason.FALTA_DE_PAGAMENTO));
+
+        assertThat(events.appended).singleElement().satisfies(event -> {
+            assertThat(event.type()).isEqualTo(PolicyEventType.POLICY_CANCELLED);
+            assertThat(event.policyVersion()).isEqualTo(1);
+            assertThat(event.occurredAt()).isEqualTo(CANCELLATION_TIME);
+            assertThat(event.policy().status()).isEqualTo(PolicyStatus.CANCELLED);
+            assertThat(event.policy().cancellationReason()).isEqualTo(CancellationReason.FALTA_DE_PAGAMENTO);
+        });
+    }
+
+    @Test
     void cancellingAgainChangesNothingAndWritesNothing() {
         policies.stored = activePolicy("AP-001");
         cancelPolicy.execute(new CancelPolicyCommandDTO("AP-001", CancellationReason.FALTA_DE_PAGAMENTO));
         policies.updated.clear();
+        events.appended.clear();
 
         Policy again = cancelPolicy.execute(new CancelPolicyCommandDTO("AP-001", CancellationReason.OUTROS));
 
         assertThat(again.getCancellationReason()).isEqualTo(CancellationReason.FALTA_DE_PAGAMENTO);
         assertThat(policies.updated).isEmpty();
+        assertThat(events.appended).isEmpty();
     }
 
     @Test
@@ -74,12 +98,32 @@ class CancelPolicyTest {
         @Override
         public Policy update(Policy policy) {
             updated.add(policy);
-            return policy;
+            return withNextVersion(policy);
         }
 
         @Override
         public Optional<Policy> findByPolicyId(String policyId) {
             return stored != null && stored.getPolicyId().equals(policyId) ? Optional.of(stored) : Optional.empty();
+        }
+    }
+
+    private static class FakePolicyEventOutbox implements PolicyEventOutbox {
+
+        final List<PolicyEventDTO> appended = new ArrayList<>();
+
+        @Override
+        public void append(PolicyEventDTO event) {
+            appended.add(event);
+        }
+
+        @Override
+        public List<PolicyEventDTO> lockPending(int limit) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public void delete(List<UUID> eventIds) {
+            throw new UnsupportedOperationException();
         }
     }
 }

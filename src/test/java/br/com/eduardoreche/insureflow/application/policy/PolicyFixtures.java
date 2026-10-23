@@ -45,4 +45,12 @@ public final class PolicyFixtures {
                 "Residencial Essencial", List.of(insured), List.of(object),
                 LocalDate.of(2026, 10, 22), NOW);
     }
+
+    public static Policy withNextVersion(Policy policy) {
+        return Policy.restore(policy.getId(), policy.getPolicyId(), policy.getDocumentType(),
+                policy.getGroupCertificateId(), policy.getIssuanceType(), policy.getIssuanceDate(), policy.getTerm(),
+                policy.getMaxLmg(), policy.getProposalId(), policy.getProductName(), policy.getInsureds(),
+                policy.getInsuredObjects(), policy.getStatus(), policy.getCancelledAt(),
+                policy.getCancellationReason(), policy.getVersion() + 1, policy.getCreatedAt(), policy.getUpdatedAt());
+    }
 }

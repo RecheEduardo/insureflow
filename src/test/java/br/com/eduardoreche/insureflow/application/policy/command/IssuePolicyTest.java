@@ -1,8 +1,13 @@
-package br.com.eduardoreche.insureflow.application.policy;
+package br.com.eduardoreche.insureflow.application.policy.command;
 
-import br.com.eduardoreche.insureflow.application.policy.dto.IdempotencyKeyDTO;
-import br.com.eduardoreche.insureflow.application.policy.dto.IssuePolicyCommandDTO;
-import br.com.eduardoreche.insureflow.application.policy.dto.IssuePolicyResultDTO;
+import br.com.eduardoreche.insureflow.application.policy.command.dto.IdempotencyKeyDTO;
+import br.com.eduardoreche.insureflow.application.policy.command.dto.IssuePolicyCommandDTO;
+import br.com.eduardoreche.insureflow.application.policy.command.dto.IssuePolicyResultDTO;
+import br.com.eduardoreche.insureflow.application.policy.event.PolicyEventType;
+import br.com.eduardoreche.insureflow.application.policy.event.dto.PolicyEventDTO;
+import br.com.eduardoreche.insureflow.application.policy.port.IdempotencyRecordRepository;
+import br.com.eduardoreche.insureflow.application.policy.port.PolicyEventOutbox;
+import br.com.eduardoreche.insureflow.application.policy.port.PolicyRepository;
 import br.com.eduardoreche.insureflow.domain.exception.BusinessRuleViolationException;
 import br.com.eduardoreche.insureflow.domain.exception.DuplicatePolicyException;
 import br.com.eduardoreche.insureflow.domain.model.Address;
@@ -35,6 +40,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -46,7 +52,8 @@ class IssuePolicyTest {
 
     private final FakePolicyRepository policies = new FakePolicyRepository();
     private final FakeIdempotencyRecordRepository idempotencyRecords = new FakeIdempotencyRecordRepository();
-    private final IssuePolicy issuePolicy = new IssuePolicy(policies, idempotencyRecords, CLOCK);
+    private final FakePolicyEventOutbox events = new FakePolicyEventOutbox();
+    private final IssuePolicy issuePolicy = new IssuePolicy(policies, idempotencyRecords, events, CLOCK);
 
     @Test
     void issuesActivePolicyAndRecordsTheIdempotencyKey() {
@@ -62,6 +69,20 @@ class IssuePolicyTest {
     }
 
     @Test
+    void recordsAPolicyIssuedEventWithTheStateOfTheNewPolicy() {
+        issuePolicy.execute(command("AP-001", LocalDate.of(2026, 10, 1)), new IdempotencyKeyDTO("key-1", "hash-a"));
+
+        assertThat(events.appended).singleElement().satisfies(event -> {
+            assertThat(event.type()).isEqualTo(PolicyEventType.POLICY_ISSUED);
+            assertThat(event.policyId()).isEqualTo("AP-001");
+            assertThat(event.policyVersion()).isZero();
+            assertThat(event.occurredAt()).isEqualTo(NOW);
+            assertThat(event.policy().productName()).isEqualTo("Residencial Essencial");
+            assertThat(event.policy().status()).isEqualTo(PolicyStatus.ACTIVE);
+        });
+    }
+
+    @Test
     void replaysTheOriginalResultForSameKeyAndSameRequest() {
         IdempotencyKeyDTO key = new IdempotencyKeyDTO("key-1", "hash-a");
         IssuePolicyResultDTO original = issuePolicy.execute(command("AP-001", LocalDate.of(2026, 10, 1)), key);
@@ -70,6 +91,7 @@ class IssuePolicyTest {
 
         assertThat(replayed).isEqualTo(original);
         assertThat(policies.saved).hasSize(1);
+        assertThat(events.appended).hasSize(1);
     }
 
     @Test
@@ -93,6 +115,7 @@ class IssuePolicyTest {
 
         assertThat(result).isEqualTo(winner);
         assertThat(policies.saved).isEmpty();
+        assertThat(events.appended).isEmpty();
     }
 
     @Test
@@ -104,6 +127,7 @@ class IssuePolicyTest {
 
         assertThat(policies.saved).isEmpty();
         assertThat(idempotencyRecords.byKey).isEmpty();
+        assertThat(events.appended).isEmpty();
     }
 
     @Test
@@ -114,6 +138,7 @@ class IssuePolicyTest {
                 new IdempotencyKeyDTO("key-2", "hash-b")))
                 .isInstanceOf(DuplicatePolicyException.class);
         assertThat(policies.saved).hasSize(1);
+        assertThat(events.appended).extracting(PolicyEventDTO::policyId).containsExactly("AP-001");
     }
 
     private static IssuePolicyCommandDTO command(String policyId, LocalDate issuanceDate) {
@@ -170,6 +195,26 @@ class IssuePolicyTest {
                 byKey.put(concurrentWinner.key(), concurrentWinner);
             }
             return byKey.putIfAbsent(idempotencyRecord.key(), idempotencyRecord) == null;
+        }
+    }
+
+    private static class FakePolicyEventOutbox implements PolicyEventOutbox {
+
+        final List<PolicyEventDTO> appended = new ArrayList<>();
+
+        @Override
+        public void append(PolicyEventDTO event) {
+            appended.add(event);
+        }
+
+        @Override
+        public List<PolicyEventDTO> lockPending(int limit) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public void delete(List<UUID> eventIds) {
+            throw new UnsupportedOperationException();
         }
     }
 }

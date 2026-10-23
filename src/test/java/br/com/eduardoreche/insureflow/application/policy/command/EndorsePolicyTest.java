@@ -1,6 +1,10 @@
-package br.com.eduardoreche.insureflow.application.policy;
+package br.com.eduardoreche.insureflow.application.policy.command;
 
-import br.com.eduardoreche.insureflow.application.policy.dto.EndorsePolicyCommandDTO;
+import br.com.eduardoreche.insureflow.application.policy.command.dto.EndorsePolicyCommandDTO;
+import br.com.eduardoreche.insureflow.application.policy.event.PolicyEventType;
+import br.com.eduardoreche.insureflow.application.policy.event.dto.PolicyEventDTO;
+import br.com.eduardoreche.insureflow.application.policy.port.PolicyEventOutbox;
+import br.com.eduardoreche.insureflow.application.policy.port.PolicyRepository;
 import br.com.eduardoreche.insureflow.domain.exception.BusinessRuleViolationException;
 import br.com.eduardoreche.insureflow.domain.exception.PolicyCancelledException;
 import br.com.eduardoreche.insureflow.domain.exception.PolicyNotFoundException;
@@ -18,9 +22,11 @@ import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 import static br.com.eduardoreche.insureflow.application.policy.PolicyFixtures.NOW;
 import static br.com.eduardoreche.insureflow.application.policy.PolicyFixtures.activePolicy;
+import static br.com.eduardoreche.insureflow.application.policy.PolicyFixtures.withNextVersion;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
@@ -30,7 +36,8 @@ class EndorsePolicyTest {
     private static final Clock CLOCK = Clock.fixed(ENDORSEMENT_TIME, ZoneOffset.UTC);
 
     private final FakePolicyRepository policies = new FakePolicyRepository();
-    private final EndorsePolicy endorsePolicy = new EndorsePolicy(policies, CLOCK);
+    private final FakePolicyEventOutbox events = new FakePolicyEventOutbox();
+    private final EndorsePolicy endorsePolicy = new EndorsePolicy(policies, events, CLOCK);
 
     @Test
     void changesOnlyTheGivenFieldsAndKeepsTheRest() {
@@ -49,12 +56,27 @@ class EndorsePolicyTest {
     }
 
     @Test
+    void recordsAPolicyEndorsedEventWithTheVersionSavedByTheRepository() {
+        policies.stored = activePolicy("AP-001");
+
+        endorsePolicy.execute(command(0, null, null, null, "Residencial Plus"));
+
+        assertThat(events.appended).singleElement().satisfies(event -> {
+            assertThat(event.type()).isEqualTo(PolicyEventType.POLICY_ENDORSED);
+            assertThat(event.policyVersion()).isEqualTo(1);
+            assertThat(event.occurredAt()).isEqualTo(ENDORSEMENT_TIME);
+            assertThat(event.policy().productName()).isEqualTo("Residencial Plus");
+        });
+    }
+
+    @Test
     void refusesWhenExpectedVersionIsNotTheCurrentOne() {
         policies.stored = activePolicy("AP-001");
 
         assertThatThrownBy(() -> endorsePolicy.execute(command(7, null, null, null, "Residencial Plus")))
                 .isInstanceOf(PolicyVersionMismatchException.class);
         assertThat(policies.updated).isEmpty();
+        assertThat(events.appended).isEmpty();
         assertThat(policies.stored.getProductName()).isEqualTo("Residencial Essencial");
     }
 
@@ -66,6 +88,7 @@ class EndorsePolicyTest {
         assertThatThrownBy(() -> endorsePolicy.execute(command(0, null, null, null, "Residencial Plus")))
                 .isInstanceOf(PolicyCancelledException.class);
         assertThat(policies.updated).isEmpty();
+        assertThat(events.appended).isEmpty();
     }
 
     @Test
@@ -114,12 +137,32 @@ class EndorsePolicyTest {
         @Override
         public Policy update(Policy policy) {
             updated.add(policy);
-            return policy;
+            return withNextVersion(policy);
         }
 
         @Override
         public Optional<Policy> findByPolicyId(String policyId) {
             return stored != null && stored.getPolicyId().equals(policyId) ? Optional.of(stored) : Optional.empty();
+        }
+    }
+
+    private static class FakePolicyEventOutbox implements PolicyEventOutbox {
+
+        final List<PolicyEventDTO> appended = new ArrayList<>();
+
+        @Override
+        public void append(PolicyEventDTO event) {
+            appended.add(event);
+        }
+
+        @Override
+        public List<PolicyEventDTO> lockPending(int limit) {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public void delete(List<UUID> eventIds) {
+            throw new UnsupportedOperationException();
         }
     }
 }
