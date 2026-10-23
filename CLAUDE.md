@@ -1,6 +1,6 @@
 # Insureflow
 
-Desafio técnico para Engenheiro de Software Pleno (Open Insurance, Seguro Patrimonial). API REST em Java 25 que gerencia apólices de seguro patrimonial: um CRUD administrativo de autoria própria e consultas inspiradas na API InsurancePatrimonial do Open Insurance. A entrega é um repositório Git com código e README, seguida de uma conversa técnica de 20 a 30 minutos em que o autor demonstra o CRUD e defende cada decisão.
+Desafio técnico para Engenheiro de Software Pleno (Open Insurance, Seguro Patrimonial). API REST em Java 25 que gerencia apólices de seguro patrimonial: um CRUD administrativo de autoria própria e consultas inspiradas na API InsurancePatrimonial do Open Insurance. 
 
 Este arquivo guarda só o que é verdadeiro se rotas, payloads, campos, banco ou mensageria mudarem.
 
