@@ -17,6 +17,7 @@ import br.com.eduardoreche.insureflow.domain.model.enums.PropertyType;
 import br.com.eduardoreche.insureflow.domain.model.enums.StreetType;
 import br.com.eduardoreche.insureflow.domain.model.enums.Uf;
 import com.fasterxml.jackson.annotation.JsonInclude;
+import io.swagger.v3.oas.annotations.media.Schema;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -50,7 +51,8 @@ public record PolicyInfoResponseDTO(
                 policy.getInsuredObjects().stream().map(InsuredObjectDTO::from).toList());
     }
 
-    public record AmountDetailsDTO(String amount, String currency) {
+    public record AmountDetailsDTO(@Schema(example = "200000.00") String amount,
+                                   @Schema(example = "BRL") String currency) {
 
         static AmountDetailsDTO from(Money money) {
             return money == null ? null
@@ -60,6 +62,8 @@ public record PolicyInfoResponseDTO(
 
     @JsonInclude(JsonInclude.Include.NON_NULL)
     public record InsuredDTO(
+            @Schema(description = "Documento mascarado: só os dois últimos caracteres ficam visíveis.",
+                    example = "***01")
             String identification,
             IdentificationType identificationType,
             String name,

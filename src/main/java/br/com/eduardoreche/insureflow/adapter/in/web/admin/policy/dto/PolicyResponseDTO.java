@@ -18,6 +18,7 @@ import br.com.eduardoreche.insureflow.domain.model.enums.PremiumPeriodicity;
 import br.com.eduardoreche.insureflow.domain.model.enums.PropertyType;
 import br.com.eduardoreche.insureflow.domain.model.enums.StreetType;
 import br.com.eduardoreche.insureflow.domain.model.enums.Uf;
+import io.swagger.v3.oas.annotations.media.Schema;
 
 import java.time.Instant;
 import java.time.LocalDate;
@@ -31,7 +32,7 @@ public record PolicyResponseDTO(
         LocalDate issuanceDate,
         LocalDate termStartDate,
         LocalDate termEndDate,
-        String maxLMG,
+        @Schema(example = "200000.00") String maxLMG,
         String proposalId,
         String productName,
         List<InsuredResponseDTO> insureds,
@@ -105,7 +106,7 @@ public record PolicyResponseDTO(
             PropertyType propertyType,
             String description,
             String postCode,
-            String amount,
+            @Schema(example = "350000.00") String amount,
             List<CoverageResponseDTO> coverages) {
 
         static InsuredObjectResponseDTO from(InsuredObject object) {
@@ -120,7 +121,7 @@ public record PolicyResponseDTO(
             CoverageCode code,
             String description,
             String susepProcessNumber,
-            String lmi,
+            @Schema(example = "100000.00") String lmi,
             LocalDate termStartDate,
             LocalDate termEndDate,
             boolean mainCoverage,
