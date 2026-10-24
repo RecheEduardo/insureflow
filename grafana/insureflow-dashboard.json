@@ -1,0 +1,156 @@
+{
+  "uid": "insureflow",
+  "title": "Insureflow",
+  "tags": ["insureflow"],
+  "timezone": "browser",
+  "refresh": "10s",
+  "time": { "from": "now-30m", "to": "now" },
+  "schemaVersion": 39,
+  "panels": [
+    {
+      "type": "row",
+      "title": "API",
+      "collapsed": false,
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 0 },
+      "panels": []
+    },
+    {
+      "type": "timeseries",
+      "title": "Requisições por segundo",
+      "description": "Por rota e status, sem as chamadas do actuator.",
+      "gridPos": { "h": 8, "w": 8, "x": 0, "y": 1 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": { "defaults": { "unit": "reqps" }, "overrides": [] },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum by (method, uri, status) (rate(http_server_requests_seconds_count{uri!~\"/actuator.*\"}[$__rate_interval]))",
+          "legendFormat": "{{method}} {{uri}} {{status}}"
+        }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "Erros 5xx por segundo",
+      "description": "Respostas de erro interno. O normal é zero.",
+      "gridPos": { "h": 8, "w": 8, "x": 8, "y": 1 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": {
+        "defaults": { "unit": "reqps", "color": { "mode": "fixed", "fixedColor": "red" } },
+        "overrides": []
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum(rate(http_server_requests_seconds_count{status=~\"5..\"}[$__rate_interval])) or vector(0)",
+          "legendFormat": "5xx"
+        }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "Tempo de resposta (p95)",
+      "description": "95% das requisições de cada rota responderam em menos que este tempo.",
+      "gridPos": { "h": 8, "w": 8, "x": 16, "y": 1 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": { "defaults": { "unit": "s" }, "overrides": [] },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "histogram_quantile(0.95, sum by (le, uri) (rate(http_server_requests_seconds_bucket{uri!~\"/actuator.*\"}[$__rate_interval])))",
+          "legendFormat": "{{uri}}"
+        }
+      ]
+    },
+    {
+      "type": "row",
+      "title": "Dado visível ao mercado",
+      "collapsed": false,
+      "gridPos": { "h": 1, "w": 24, "x": 0, "y": 9 },
+      "panels": []
+    },
+    {
+      "type": "timeseries",
+      "title": "Eventos esperando no outbox",
+      "description": "Eventos gravados que ainda não foram enviados ao Kafka. Se sobe e não desce, o Kafka está com problema.",
+      "gridPos": { "h": 8, "w": 6, "x": 0, "y": 10 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": { "defaults": { "unit": "none", "decimals": 0 }, "overrides": [] },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "insureflow_outbox_pending",
+          "legendFormat": "pendentes"
+        }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "Atraso até o policy-info",
+      "description": "Tempo entre a alteração da apólice e ela aparecer atualizada no policy-info.",
+      "gridPos": { "h": 8, "w": 6, "x": 6, "y": 10 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": { "defaults": { "unit": "s" }, "overrides": [] },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "rate(insureflow_policy_projection_delay_seconds_sum[$__rate_interval]) / rate(insureflow_policy_projection_delay_seconds_count[$__rate_interval])",
+          "legendFormat": "médio"
+        },
+        {
+          "refId": "B",
+          "expr": "insureflow_policy_projection_delay_max_seconds",
+          "legendFormat": "máximo"
+        }
+      ]
+    },
+    {
+      "type": "stat",
+      "title": "Mensagens na DLT",
+      "description": "Mensagens que desistiram de ser processadas desde que a aplicação subiu. Cada uma é uma apólice que pode estar desatualizada no policy-info. O normal é zero.",
+      "gridPos": { "h": 8, "w": 6, "x": 12, "y": 10 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "none",
+          "decimals": 0,
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "red", "value": 1 }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "colorMode": "background",
+        "graphMode": "none"
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum(insureflow_policy_events_dead_lettered_total) or vector(0)",
+          "legendFormat": "DLT"
+        }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "Mensagens não lidas pelos consumidores",
+      "description": "Quantas mensagens do tópico cada grupo de consumo ainda não leu.",
+      "gridPos": { "h": 8, "w": 6, "x": 18, "y": 10 },
+      "datasource": { "type": "prometheus", "uid": "prometheus" },
+      "fieldConfig": { "defaults": { "unit": "none", "decimals": 0 }, "overrides": [] },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "sum by (group) (label_replace(kafka_consumer_fetch_manager_records_lag{topic=\"insureflow.policy.events\"}, \"group\", \"$1\", \"client_id\", \"consumer-(.*)-[0-9]+\"))",
+          "legendFormat": "{{group}}"
+        }
+      ]
+    }
+  ]
+}
