@@ -3,10 +3,14 @@ package br.com.eduardoreche.insureflow.adapter.in.web;
 import io.swagger.v3.core.converter.ModelConverters;
 import io.swagger.v3.oas.models.Components;
 import io.swagger.v3.oas.models.OpenAPI;
+import io.swagger.v3.oas.models.headers.Header;
 import io.swagger.v3.oas.models.info.Info;
 import io.swagger.v3.oas.models.media.Content;
 import io.swagger.v3.oas.models.media.MediaType;
 import io.swagger.v3.oas.models.media.Schema;
+import io.swagger.v3.oas.models.media.StringSchema;
+import io.swagger.v3.oas.models.parameters.HeaderParameter;
+import io.swagger.v3.oas.models.responses.ApiResponse;
 import org.springdoc.core.customizers.GlobalOpenApiCustomizer;
 import org.springdoc.core.models.GroupedOpenApi;
 import org.springframework.context.annotation.Bean;
@@ -53,13 +57,37 @@ class OpenApiConfig {
                 openApi.components(new Components());
             }
             ModelConverters.getInstance().readAll(ErrorResponseDTO.class).forEach(openApi.getComponents()::addSchemas);
-            Content error = new Content().addMediaType("application/json",
-                    new MediaType().schema(new Schema<>().$ref("#/components/schemas/ErrorResponseDTO")));
             openApi.getPaths().values().stream()
                     .flatMap(path -> path.readOperations().stream())
                     .flatMap(operation -> operation.getResponses().entrySet().stream())
                     .filter(response -> response.getKey().startsWith("4") || response.getKey().startsWith("5"))
-                    .forEach(response -> response.getValue().setContent(error));
+                    .forEach(response -> response.getValue().setContent(errorContent()));
         };
+    }
+
+    @Bean
+    GlobalOpenApiCustomizer interactionIdHeader() {
+        return openApi -> openApi.getPaths().values().stream()
+                .flatMap(path -> path.readOperations().stream())
+                .forEach(operation -> {
+                    operation.addParametersItem(new HeaderParameter()
+                            .name(InteractionIdFilter.HEADER)
+                            .description("UUID que correlaciona a chamada. Se ausente, a API gera um.")
+                            .schema(new StringSchema().format("uuid")));
+                    ApiResponse invalid = operation.getResponses().computeIfAbsent("400",
+                            code -> new ApiResponse().content(errorContent()));
+                    invalid.description(invalid.getDescription() == null
+                            ? "x-fapi-interaction-id inválido (INVALID_INTERACTION_ID)."
+                            : invalid.getDescription() + " Também para x-fapi-interaction-id inválido.");
+                    operation.getResponses().values().forEach(response -> response.addHeaderObject(
+                            InteractionIdFilter.HEADER, new Header()
+                                    .description("O valor recebido ou, se ausente ou rejeitado, o gerado pela API.")
+                                    .schema(new StringSchema().format("uuid"))));
+                });
+    }
+
+    private static Content errorContent() {
+        return new Content().addMediaType("application/json",
+                new MediaType().schema(new Schema<>().$ref("#/components/schemas/ErrorResponseDTO")));
     }
 }

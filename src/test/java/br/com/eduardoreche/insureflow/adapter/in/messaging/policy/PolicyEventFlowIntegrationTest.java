@@ -4,6 +4,10 @@ import br.com.eduardoreche.insureflow.TestcontainersConfiguration;
 import br.com.eduardoreche.insureflow.application.policy.PolicyFixtures;
 import br.com.eduardoreche.insureflow.application.policy.event.PolicyEventType;
 import br.com.eduardoreche.insureflow.application.policy.event.dto.PolicyEventDTO;
+import br.com.eduardoreche.insureflow.infrastructure.kafka.KafkaConfig;
+import io.micrometer.core.instrument.Counter;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.Timer;
 import org.apache.kafka.clients.consumer.Consumer;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.junit.jupiter.api.Test;
@@ -77,8 +81,13 @@ class PolicyEventFlowIntegrationTest {
     @Autowired
     KafkaListenerEndpointRegistry listeners;
 
+    @Autowired
+    MeterRegistry meters;
+
     @Test
-    void issuanceEndorsementAndCancellationReachTheReadModelAndTheHistoryInOrder() throws Exception {
+    void issuanceEndorsementAndCancellationReachTheReadModelAndTheHistoryInOrder(CapturedOutput output)
+            throws Exception {
+        long projectedBefore = projections();
         assertThat(issue("AP-FLOW-1", "key-flow-1").statusCode()).isEqualTo(201);
         await().atMost(PROPAGATION).untilAsserted(() ->
                 assertThat(get("/insurance-patrimonial/AP-FLOW-1/policy-info").statusCode()).isEqualTo(200));
@@ -98,6 +107,9 @@ class PolicyEventFlowIntegrationTest {
                 + "ORDER BY policy_version", Long.class)).containsExactly(0L, 1L, 2L);
         assertThat(get("/insurance-patrimonial/AP-FLOW-1/policy-info").statusCode()).isEqualTo(200);
         assertThat(outboxRowsOf("AP-FLOW-1")).isZero();
+        await().atMost(PROPAGATION).untilAsserted(() ->
+                assertThat(projections()).isGreaterThanOrEqualTo(projectedBefore + 3));
+        assertThat(output.getAll()).doesNotContain("12345678901", "Maria Ficticia");
     }
 
     @Test
@@ -129,6 +141,7 @@ class PolicyEventFlowIntegrationTest {
         String poison = "{\"policyId\":\"AP-FLOW-4\",\"identification\":98765432100x";
         PolicyEventDTO valid =
                 PolicyEventDTO.of(PolicyEventType.POLICY_ISSUED, PolicyFixtures.activePolicy("AP-FLOW-4"));
+        double deadLetteredBefore = deadLettered();
 
         kafka.send(topic, "AP-FLOW-4", poison).get();
         kafka.send(topic, "AP-FLOW-4", json.writeValueAsString(valid)).get();
@@ -139,7 +152,8 @@ class PolicyEventFlowIntegrationTest {
         assertThat(deadLetters).extracting(ConsumerRecord::value).containsOnly(poison);
         assertThat(deadLetters).extracting(record -> header(record, KafkaHeaders.DLT_EXCEPTION_MESSAGE))
                 .allSatisfy(message -> assertThat(message).contains("could not be read"));
-        assertThat(output.getAll()).doesNotContain("98765432100");
+        assertThat(deadLettered()).isEqualTo(deadLetteredBefore + 2);
+        assertThat(output.getAll()).contains("\"policyId\":\"AP-FLOW-4\"").doesNotContain("98765432100");
     }
 
     @Test
@@ -179,6 +193,16 @@ class PolicyEventFlowIntegrationTest {
 
     private int outboxRowsOf(String policyId) {
         return jdbc.queryForObject("SELECT count(*) FROM policy_outbox WHERE policy_id = ?", Integer.class, policyId);
+    }
+
+    private long projections() {
+        Timer delay = meters.find("insureflow.policy.projection.delay").timer();
+        return delay == null ? 0 : delay.count();
+    }
+
+    private double deadLettered() {
+        Counter counter = meters.find(KafkaConfig.DEAD_LETTERED).counter();
+        return counter == null ? 0 : counter.count();
     }
 
     private HttpResponse<String> issue(String policyId, String idempotencyKey) throws Exception {

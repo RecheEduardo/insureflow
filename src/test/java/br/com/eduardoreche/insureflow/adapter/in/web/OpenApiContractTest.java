@@ -43,7 +43,7 @@ class OpenApiContractTest {
         Map<String, Object> responses = admin.read("$.paths['/api/v1/policies'].post.responses");
         assertThat(responses).containsOnlyKeys("201", "400", "409", "422");
         Map<String, Object> headers = admin.read("$.paths['/api/v1/policies'].post.responses['201'].headers");
-        assertThat(headers).containsOnlyKeys("Location", "ETag");
+        assertThat(headers).containsOnlyKeys("Location", "ETag", "x-fapi-interaction-id");
         assertThat(admin.read("$.paths['/api/v1/policies'].post.parameters[?(@.name == 'Idempotency-Key')].required",
                 List.class)).containsExactly(true);
     }
@@ -80,7 +80,22 @@ class OpenApiContractTest {
         assertThat(paths).containsOnlyKeys("/insurance-patrimonial", "/insurance-patrimonial/{policyId}/policy-info");
         Map<String, Object> responses =
                 openInsurance.read("$.paths['/insurance-patrimonial/{policyId}/policy-info'].get.responses");
-        assertThat(responses).containsOnlyKeys("200", "404");
+        assertThat(responses).containsOnlyKeys("200", "400", "404");
+    }
+
+    @Test
+    void everyOperationOfBothApisDocumentsTheInteractionIdOnRequestAndResponses() throws Exception {
+        for (String group : List.of("admin", "open-insurance")) {
+            DocumentContext docs = apiDocs(group);
+
+            List<Object> headerParameters =
+                    docs.read("$.paths.*.*.parameters[?(@.name == 'x-fapi-interaction-id' && @.in == 'header')]");
+            List<Map<String, Object>> responsesByOperation = docs.read("$.paths.*.*.responses");
+            assertThat(headerParameters).hasSameSizeAs(responsesByOperation);
+            assertThat(responsesByOperation).allSatisfy(responses -> assertThat(responses).containsKey("400")
+                    .allSatisfy((code, response) -> assertThat(JsonPath.<Map<String, Object>>read(response,
+                            "$.headers")).containsKey("x-fapi-interaction-id")));
+        }
     }
 
     @Test

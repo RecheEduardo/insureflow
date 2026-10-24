@@ -110,6 +110,12 @@ class ApiExceptionHandler {
                 "A Idempotency-Key deve ter de 1 a 255 caracteres ASCII visíveis.");
     }
 
+    @ExceptionHandler(InteractionIdFilter.InvalidInteractionIdException.class)
+    ResponseEntity<ErrorResponseDTO> invalidInteractionId() {
+        return respond(HttpStatus.BAD_REQUEST, "INVALID_INTERACTION_ID",
+                "O cabeçalho x-fapi-interaction-id deve ser um UUID.");
+    }
+
     @ExceptionHandler(MethodArgumentNotValidException.class)
     ResponseEntity<ErrorResponseDTO> invalidBody(MethodArgumentNotValidException e) {
         String fields = e.getBindingResult().getFieldErrors().stream()
