@@ -1,6 +1,18 @@
-# Insureflow
+<p align="center">
+   <img src="https://readme-typing-svg.herokuapp.com?font=Century+Gothic&weight=800&size=48&pause=1000&color=F7F7F7&center=true&vCenter=true&width=435&lines=InsureFlow" alt="Typing SVG" />  
+</p>
+
+---
 
 API REST de apólices de seguro patrimonial, construída para um case técnico. Ela mantém um cadastro local de contratos, com identificação, vigência, produto, segurados e objetos segurados, e o expõe de duas formas: uma API administrativa própria, pela qual o backoffice emite, endossa e cancela apólices, e uma API de consulta inspirada na InsurancePatrimonial do Open Insurance Brasil. As escritas são extensões internas fictícias, sem equivalente na especificação oficial, e a consulta cobre o subconjunto documentado na seção 12, sem consentimento nem OAuth2. A solução não tem certificação nem aderência regulatória, e todos os dados são fictícios.
+
+<h3 align="center">Vídeo de overview completo do repositório e resolução do case:</h3>
+
+<p align="center">
+  <a href="https://youtu.be/u2so_lpzG_w" target="_blank">
+    <img width="1920" height="1080" alt="Thumbnail do vídeo Blogalizando" src="https://github.com/user-attachments/assets/09029e97-90d4-47ec-9a89-d6d5d45137f3" />
+  </a>
+</p>
 
 ## Guia de leitura
 
